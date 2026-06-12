@@ -1,0 +1,40 @@
+digraph SandwichDeQuesoALaParrilla {
+  // Atributos del grafo
+  rankdir=LR;
+  node [fontname="Arial", fontsize=12];
+  edge [fontname="Arial", fontsize=10];
+  
+  // Definiciones de nodos con estilos
+  // Ingredientes (cajas amarillas)
+  Queso [label="Queso", shape=box, style=filled, fillcolor="#FFFACD"];
+  Pan [label="Pan", shape=box, style=filled, fillcolor="#FFFACD"];
+  Mantequilla [label="Mantequilla", shape=box, style=filled, fillcolor="#FFFACD"];
+  
+  // Procesos (óvalos azules)
+  cortar [label="cortar", shape=ellipse, style=filled, fillcolor="#ADD8E6"];
+  untar [label="untar", shape=ellipse, style=filled, fillcolor="#ADD8E6"];
+  apilar [label="apilar", shape=ellipse, style=filled, fillcolor="#ADD8E6"];
+  calentar [label="calentar", shape=ellipse, style=filled, fillcolor="#ADD8E6"];
+  
+  // Productos intermedios (cajas amarillo claro)
+  QuesoCortado [label="Queso\nCortado", shape=box, style=filled, fillcolor="#FFF8DC"];
+  PanUntado [label="Pan\nUntado", shape=box, style=filled, fillcolor="#FFF8DC"];
+  SandwichCrudo [label="Sándwich\nCrudo", shape=box, style=filled, fillcolor="#FFF8DC"];
+  
+  // Producto final (caja naranja)
+  SandwichDeQuesoALaParrilla [label="Sándwich\nde Queso\na la Parrilla", shape=box, style=filled, fillcolor="#FFDAB9"];
+  
+  // Conexiones
+  Queso -> cortar;
+  cortar -> QuesoCortado;
+  QuesoCortado -> apilar;
+  
+  Pan -> untar;
+  Mantequilla -> untar;
+  untar -> PanUntado;
+  PanUntado -> apilar;
+  
+  apilar -> SandwichCrudo;
+  SandwichCrudo -> calentar;
+  calentar -> SandwichDeQuesoALaParrilla;
+}

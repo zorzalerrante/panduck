@@ -1,0 +1,22 @@
+# Campos que `panduck init paper` pregunta al crear el proyecto. Cada clave
+# corresponde a un marcador {{clave}} en head.yaml y main.md. Este archivo
+# no se copia al directorio del usuario.
+[[prompts]]
+key = "titulo"
+question = "Titulo del paper"
+default = "Titulo del trabajo"
+
+[[prompts]]
+key = "autor"
+question = "Autor(a) principal"
+default = "Nombre Apellido"
+
+[[prompts]]
+key = "afiliacion"
+question = "Afiliacion"
+default = "Universidad de Chile, Santiago, Chile"
+
+[[prompts]]
+key = "serie"
+question = "Nombre de la serie (pie de pagina del PDF)"
+default = "Working Paper"

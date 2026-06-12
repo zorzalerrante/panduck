@@ -1,0 +1,17 @@
+# Campos que `panduck init slides` pregunta. Las claves corresponden a los
+# marcadores {{clave}} en head.yaml. Este archivo no se copia al directorio
+# del usuario.
+[[prompts]]
+key = "titulo"
+question = "Titulo de la charla"
+default = "Titulo de la charla"
+
+[[prompts]]
+key = "autor"
+question = "Autor(a)"
+default = "Nombre Apellido"
+
+[[prompts]]
+key = "footer"
+question = "Texto del pie (evento, fecha)"
+default = "Charla 2026"

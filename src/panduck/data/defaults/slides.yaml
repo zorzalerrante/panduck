@@ -1,0 +1,13 @@
+# Slides academicas en PDF via typst (rapido, sin LaTeX). El nivel de slide
+# es ## (level 2); # genera una slide de seccion. panduck genera el .typ con
+# pandoc y luego corre `typst compile` para producir el PDF (ver cli.py).
+from: markdown+smart+citations
+to: typst
+standalone: true
+template: slides
+filters:
+  - citeproc
+  # post-citeproc: aplana los Cite para que el writer de typst no emita #cite
+  - typst-flatten-cites.lua
+  # parte el cuerpo en slides y traduce columnas, fondos y diagramas Graphviz
+  - typst-slides.lua

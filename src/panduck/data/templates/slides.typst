@@ -1,0 +1,126 @@
+// Plantilla de slides para panduck (typst), con un tema inspirado en Metropolis:
+// fondo claro, titulo arriba a la izquierda con una linea fina debajo, slides de
+// seccion en teal oscuro y una barra de progreso fina al pie. La tipografia y el
+// color de acento se configuran desde head.yaml (mainfont, accent).
+//
+// Reemplaza la plantilla typst por defecto de pandoc, asi que reincluye a mano
+// las definiciones que el writer presupone (blockquote, horizontalrule, endnote).
+// El filtro typst-slides.lua parte el cuerpo en llamadas #slide[] / #section-slide[].
+
+#let blockquote(body) = [
+  #set text( size: 0.92em )
+  #block(inset: (left: 1.5em, top: 0.2em, bottom: 0.2em))[#body]
+]
+
+#let horizontalrule = [
+  #line(start: (25%,0%), end: (75%,0%))
+]
+
+#let endnote(num, contents) = [
+  #stack(dir: ltr, spacing: 3pt, super[#num], contents)
+]
+
+#show terms: it => {
+  it.children
+    .map(child => [
+      #strong[#child.term]
+      #block(inset: (left: 1.5em, top: -0.4em))[#child.description]
+      ])
+    .join()
+}
+
+// ---- Tema Metropolis --------------------------------------------------------
+
+#let mdark = rgb("#23373b")        // teal oscuro: titulos, texto, fondo de seccion
+#let accent = $if(accent)$rgb("$accent$")$else$rgb("#eb811b")$endif$  // naranja de acento
+#let footer-text = [$if(footer)$$footer$$else$$if(title)$$title$$endif$$endif$]
+
+#set page(
+  paper: "presentation-16-9",
+  margin: (x: 2cm, top: 1.5cm, bottom: 1.4cm),
+  fill: white,
+  footer: context [
+    #set text(size: 10pt, fill: luma(45%))
+    #footer-text #h(1fr) #counter(page).display()
+  ],
+  // barra de progreso al borde inferior (estilo Metropolis)
+  foreground: context {
+    let cur = counter(page).get().first()
+    let total = calc.max(counter(page).final().first(), 1)
+    place(bottom, line(length: (cur / total) * 100%, stroke: 2pt + accent))
+  },
+)
+#set text(
+  font: ($if(mainfont)$"$mainfont$"$else$"Liberation Sans"$endif$,),
+  size: $if(fontsize)$$fontsize$$else$22pt$endif$,
+  fill: mdark,
+)
+#set par(justify: false, leading: 0.7em)
+#show heading: set text(fill: mdark)
+#set list(marker: box(width: 0.42em, height: 0.42em, fill: accent, baseline: -0.1em), spacing: 0.9em)
+#set enum(spacing: 0.9em)
+// en slides los pies de imagen van sin numero ("Figura 1:"): solo el texto
+#set figure(numbering: none)
+#show figure.caption: set text(size: 0.8em, fill: luma(40%))
+
+// Slide de contenido: titulo arriba a la izquierda + linea fina debajo.
+#let slide(title: none, bg: none, bg-image: none, centered: false, smaller: false, body) = {
+  let dark-bg = bg != none or bg-image != none
+  page(
+    fill: if dark-bg { bg } else { white },
+    background: if bg-image != none { image(bg-image, width: 100%, height: 100%, fit: "cover") },
+  )[
+    #set text(size: if smaller { 17pt } else { 22pt }, fill: if dark-bg { white } else { mdark })
+    #if title != none {
+      v(0.1em)
+      text(size: 26pt, weight: "medium", fill: if dark-bg { white } else { mdark })[#title]
+      v(0.2em)
+      line(length: 100%, stroke: 1.2pt + (if dark-bg { white } else { mdark }))
+      v(0.7em)
+    }
+    #if centered {
+      align(center + horizon)[#body]
+    } else {
+      body
+    }
+  ]
+}
+
+// Slide de seccion (encabezado # de nivel 1): pagina completa en teal oscuro.
+#let section-slide(body) = {
+  page(fill: mdark, footer: none)[
+    #align(horizon)[
+      #text(size: 34pt, weight: "medium", fill: white)[#body]
+      #v(0.3em)
+      #line(length: 28%, stroke: 2.5pt + accent)
+    ]
+  ]
+}
+
+// ---- Portada (title frame de Metropolis) ------------------------------------
+
+$if(title)$
+#page(footer: none)[
+  #align(horizon)[
+    #block[
+      #text(size: 38pt, weight: "medium", fill: mdark)[$title$]
+      $if(subtitle)$
+      #v(0.3em)
+      #text(size: 22pt, fill: luma(40%))[$subtitle$]
+      $endif$
+      #v(0.5em)
+      #line(length: 100%, stroke: 2.5pt + accent)
+      #v(0.7em)
+      $if(author)$
+      #text(size: 20pt, fill: mdark)[$for(author)$$author$$sep$ #h(1.2em) $endfor$]
+      $endif$
+      $if(date)$
+      #v(0.3em)
+      #text(size: 16pt, fill: luma(45%))[$date$]
+      $endif$
+    ]
+  ]
+]
+$endif$
+
+$body$

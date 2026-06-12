@@ -1,0 +1,32 @@
+# Campos que `panduck init dcc-informe` pregunta al crear el proyecto. Cada
+# clave corresponde a un marcador {{clave}} en main.md. Este archivo no se
+# copia al directorio del usuario. Los defaults reproducen el ejemplo base.
+[[prompts]]
+key = "titulo"
+question = "Titulo del proyecto"
+default = "Titulo de tu proyecto"
+
+[[prompts]]
+key = "nombre"
+question = "Tu nombre"
+default = "TU NOMBRE"
+
+[[prompts]]
+key = "guia"
+question = "Profesor(a) guia"
+default = "Eduardo Graells-Garrido"
+
+[[prompts]]
+key = "departamento"
+question = "Departamento"
+default = "Departamento de Ciencias de la Computacion"
+
+[[prompts]]
+key = "memoria"
+question = "Titulo profesional"
+default = "Ingeniero/a Civil en Computacion"
+
+[[prompts]]
+key = "anho"
+question = "Ano"
+default = "2025"

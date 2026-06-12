@@ -1,0 +1,12 @@
+---
+title: "{{titulo}}"
+author:
+  - "{{autor}}"
+date: "2026"
+footer: "{{footer}}"
+bibliography: references.bib
+csl: ieee.csl
+# Tema (opcional): la tipografia y el color de acento son configurables.
+# mainfont: "Liberation Sans"
+# accent: "#eb811b"
+---

@@ -1,0 +1,12 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{panduck-asterism}[2026/06/10 Asterismo para cortes de seccion]
+% Provee el asterismo y un corte de seccion centrado, independiente de la clase
+% (no usa \fancybreak, que solo existe en memoir). Lo usa el filtro
+% sectionbreak.lua, que ademas inyecta este paquete en el preambulo.
+\RequirePackage{stackengine}
+\RequirePackage{adforn}
+% Asterismo triangular: dos ornamentos adforn arriba, uno abajo.
+\providecommand{\asterism}{\stackon[-0.5pt]{\adforn{11}~\adforn{11}}{\adforn{11}}}
+% Corte de seccion: asterismo centrado con aire arriba y abajo.
+\newcommand{\panduckbreak}{\par\vspace{0.5cm}{\centering\asterism\par}\vspace{0.5cm}}
+\endinput

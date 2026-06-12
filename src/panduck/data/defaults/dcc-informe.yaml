@@ -1,0 +1,10 @@
+# Informe E / memoria del DCC (U. de Chile), clase umemoria
+from: markdown+smart+citations
+standalone: true
+pdf-engine: xelatex
+template: dcc-informe
+top-level-division: chapter
+csl: acm-sig-proceedings-long-author-list.csl
+filters:
+  - pandoc-crossref
+  - citeproc

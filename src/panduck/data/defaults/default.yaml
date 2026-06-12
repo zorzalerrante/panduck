@@ -1,0 +1,6 @@
+from: markdown+smart+citations
+standalone: true
+pdf-engine: xelatex
+filters:
+  - pandoc-crossref
+  - citeproc

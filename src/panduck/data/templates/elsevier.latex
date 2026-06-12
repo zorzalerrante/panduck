@@ -1,0 +1,118 @@
+\documentclass[$for(classoptions)$$classoptions$$sep$,$endfor$]{elsarticle}
+
+\usepackage[unicode=true]{hyperref} % provides \hypertarget
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for \real{} in table column specs
+\usepackage{etoolbox}
+\BeforeBeginEnvironment{longtable}{\begingroup\footnotesize}
+\AfterEndEnvironment{longtable}{\endgroup}
+
+% bibliography
+$if(natbib)$
+\usepackage{natbib}
+\bibliographystyle{$if(biblio-style)$$biblio-style$$else$plainnat$endif$}
+$endif$
+$if(biblatex)$
+\usepackage$if(biblio-style)$[style=$biblio-style$]$endif${biblatex}
+$if(biblatexoptions)$\ExecuteBibliographyOptions{$for(biblatexoptions)$$biblatexoptions$$sep$,$endfor$}$endif$
+$for(bibliography)$
+\addbibresource{$bibliography$}
+$endfor$
+$endif$
+
+\providecommand{\tightlist}{%
+\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+$if(csl-refs)$
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newlength{\csllabelwidth}
+\setlength{\csllabelwidth}{3em}
+\newlength{\cslentryspacingunit}
+\setlength{\cslentryspacingunit}{\parskip}
+\newenvironment{CSLReferences}[2]
+ {\setlength{\parindent}{0pt}
+  \ifodd #1
+  \let\oldpar\par
+  \def\par{\hangindent=\cslhangindent\oldpar}
+  \fi
+  \setlength{\parskip}{#2\cslentryspacingunit}}%
+ {}
+\newcommand{\CSLBlock}[1]{#1\hfill\break}
+\newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{#1}}
+\newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{#1}\break}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+$endif$
+
+\begin{document}
+
+\begin{frontmatter}
+
+	\title{$title$}
+
+	$if(anonymous)$
+	\author{Anonymous}
+	$else$
+	$for(authors)$
+	$if(it.corresponding)$
+	\author[$it.affiliation_ids$]{$it.name$\corref{cor1}}
+	$else$
+	\author[$it.affiliation_ids$]{$it.name$}
+	$endif$
+	\ead{$it.email$}
+	$endfor$
+
+	$for(affiliation_groups)$
+	\address[$it.id$]{$it.name$}
+	$endfor$
+
+	$for(authors)$
+	$if(it.corresponding)$
+	\cortext[cor1]{Corresponding author. Email: $it.email$}
+	$endif$
+	$endfor$
+	$endif$
+
+	\begin{abstract}
+		$abstract$
+	\end{abstract}
+
+	\begin{keyword}
+		$for(keywords)$$it$$sep$ \sep $endfor$
+	\end{keyword}
+
+\end{frontmatter}
+
+$for(include-before)$
+$include-before$
+$endfor$
+
+$body$
+
+$if(funding)$
+\section*{Funding}
+This work was supported by $for(funding)$$it$$sep$; $endfor$.
+$endif$
+
+$if(natbib)$
+$if(bibliography)$
+$if(biblio-title)$
+\renewcommand\refname{$biblio-title$}
+$endif$
+\bibliography{$for(bibliography)$$bibliography$$sep$,$endfor$}
+$endif$
+$endif$
+$if(biblatex)$
+\printbibliography$if(biblio-title)$[title=$biblio-title$]$endif$
+$endif$
+
+$for(include-after)$
+$include-after$
+$endfor$
+\end{document}

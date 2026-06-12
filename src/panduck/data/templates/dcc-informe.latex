@@ -1,0 +1,151 @@
+% se puede agregar la opción [english] para 
+%  memorias o tesis en inglés (borrando el archivo .aux)
+\documentclass{umemoria} 
+
+\usepackage[mathlines,displaymath]{lineno}
+\usepackage{longtable}
+\usepackage{ltxtable}
+\usepackage{floatrow}
+\DeclareFloatFont{tiny}{\small}
+\floatsetup[table]{font=tiny}
+\usepackage{etoolbox}
+\BeforeBeginEnvironment{longtable}{\begin{center}\centering\scriptsize}
+\AfterEndEnvironment{longtable}{\end{center}}
+\renewcommand{\topfraction}{.8}
+\renewcommand{\floatpagefraction}{.8}
+\usepackage{amsmath}
+\usepackage{array,calc}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage{libertinus}
+
+\setlength\LTleft\fill
+\setlength\LTright\fill
+
+% Fira Code
+
+\usepackage{fontspec}
+\setmonofont{Fira Code}[
+  Contextuals=Alternate, Scale=0.8  % Activate the calt feature
+]
+\usepackage{listings}
+\usepackage{lstfiracode} % https://ctan.org/pkg/lstfiracode
+\lstset{
+  language=C++,
+  style=FiraCodeStyle,   % Use predefined FiraCodeStyle
+  basicstyle=\ttfamily   % Use \ttfamily for source code listings
+}
+
+% tightlist
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% CSL
+
+\NewDocumentCommand\citeproctext{}{}
+\NewDocumentCommand\citeproc{mm}{%
+  \begingroup\def\citeproctext{#2}\cite{#1}\endgroup}
+\makeatletter
+ % allow citations to break across lines
+ \let\@cite@ofmt\@firstofone
+ % avoid brackets around text for \cite:
+ \def\@biblabel#1{}
+ \def\@cite#1#2{{#1\if@tempswa , #2\fi}}
+\makeatother
+\newlength{\cslhangindent}
+\setlength{\cslhangindent}{1.5em}
+\newlength{\csllabelwidth}
+\setlength{\csllabelwidth}{3em}
+\newlength{\cslentryspacingunit} % times entry-spacing
+\setlength{\cslentryspacingunit}{\parskip}
+\newenvironment{CSLReferences}[2] % #1 hanging-indent, #2 entry-spacing
+ {% don't indent paragraphs
+  \setlength{\parindent}{0pt}
+  % turn on hanging indent if param 1 is 1
+  \ifodd #1
+  \let\oldpar\par
+  \def\par{\hangindent=\cslhangindent\oldpar}
+  \fi
+  % set entry spacing
+  \setlength{\parskip}{#2\cslentryspacingunit}
+ }%
+ {}
+\newcommand{\CSLBlock}[1]{#1\hfill\break}
+\newcommand{\CSLLeftMargin}[1]{\parbox[t]{\csllabelwidth}{#1}}
+\newcommand{\CSLRightInline}[1]{\parbox[t]{\linewidth - \csllabelwidth}{#1}\break}
+\newcommand{\CSLIndent}[1]{\hspace{\cslhangindent}#1}
+
+
+\depto{$departamento$}
+\author{$nombre$}
+\title{$titulo$}
+
+% incluir ambos comandos para una doble titulación
+%  o quitar el comando que no aplica
+$if(memoria)$\memoria{$memoria$}$endif$
+$if(tesis)$\tesis{$tesis$}$endif$
+%\tesis{Doctor en ???} % incluir solo este comando para doctorados
+
+% puede haber varios profesores guía seperados por coma;
+% pero si es una memoria, solo puede haber un profesor guía
+$if(guia)$\guia{$guia$}$endif$
+
+% puede haber varios profesores co-guía seperados por coma;
+% pero si es una memoria, el profesor co-guía será el primer
+% integrante de la comisión
+% incluir en caso de co-guía de *tesis*
+$if(coguia)$\coguia{$coguia$}$endif$
+
+%\cotutela{Nombre Institución} % incluir en caso de cotutela
+
+$if(comision)$\comision{$comision$}$endif$
+
+%\auspicio{Nombre Institución} % incluir en caso de recibir financiamiento
+
+% tiene que ser el año en que se da el examen de título/grado (defensa)
+$if(anho)$\anho{$anho$}$endif$
+
+\begin{document}
+
+\frontmatter
+\maketitle
+
+$if(resumen)$
+\begin{resumen}
+$resumen$
+\end{resumen}
+$endif$
+
+% opcional: incluir para tesis en inglés;
+%  en este caso hay que tener el resumen y abstract
+%   en ambos idiomas
+$if(abstract)$
+\begin{abstract}
+$abstract$
+\end{abstract}
+$endif$
+
+$if(dedicatoria)$
+\begin{dedicatoria}
+$dedicatoria$
+\end{dedicatoria}
+$endif$
+
+$if(agradecimientos)$
+\begin{thanks}
+$agradecimientos$
+\end{thanks}
+$endif$
+
+$if(toc)$
+\tableofcontents
+\listoftables % opcional
+\listoffigures % opcional
+$endif$
+
+\mainmatter
+
+$body$
+
+\end{document}

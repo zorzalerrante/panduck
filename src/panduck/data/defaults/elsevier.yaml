@@ -1,0 +1,12 @@
+from: markdown+smart+citations
+standalone: true
+pdf-engine: xelatex
+template: elsevier
+filters:
+  # los filtros lua se resuelven desde <data-dir>/filters
+  - strip-header-includes.lua
+  - process-affiliations.lua
+  - pandoc-crossref
+  - citeproc
+  # corre despues de citeproc: inserta \section*{Funding} antes de las referencias
+  - insert-funding-before-refs.lua

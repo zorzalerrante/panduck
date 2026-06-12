@@ -1,0 +1,9 @@
+# Paper academico generico (working paper). Compila a PDF (documentclass
+# article) o a docx. El estilo LaTeX vive en header-includes del head.yaml;
+# para docx, panduck inyecta reference/paper-reference.docx en build -t docx.
+from: markdown+smart+citations
+standalone: true
+pdf-engine: xelatex
+filters:
+  - pandoc-crossref
+  - citeproc

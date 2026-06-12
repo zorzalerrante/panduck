@@ -1,0 +1,13 @@
+[project]
+name = "panduck"
+version = "0.1.0"
+description = "Compilacion centralizada de documentos markdown a PDF con pandoc, citeproc y pandoc-crossref"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+panduck = "panduck.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
