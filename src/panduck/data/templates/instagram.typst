@@ -1,0 +1,73 @@
+// Plantilla de posts de Instagram para panduck (typst). Cada encabezado # del
+// markdown es un post (una pagina). El filtro instagram-posts.lua parte el cuerpo
+// en llamadas #post(...)[...], resuelve el color de texto por contraste y traduce
+// columnas e imagenes. La geometria, la fuente y el pie se configuran desde
+// head.yaml; cada post puede sobreescribir fondo, imagen y color de texto desde
+// los atributos del encabezado.
+//
+// Reemplaza la plantilla typst por defecto de pandoc, asi que reincluye a mano
+// las definiciones que el writer presupone (blockquote, horizontalrule, endnote).
+
+#let _w = $if(width)$$width$$else$10cm$endif$
+#let _h = $if(height)$$height$$else$12.5cm$endif$
+#let _margin = $if(margin)$$margin$$else$0.9cm$endif$
+#let _fontsize = $if(fontsize)$$fontsize$$else$14pt$endif$
+// fuente para los spans .sff/.sans. El nombre es el typographic family que ve
+// typst (revisar con `typst fonts`), no necesariamente el de fontconfig.
+#let _sansfont = $if(sansfont)$"$sansfont$"$else$"Liberation Sans"$endif$
+#let _footer = [$if(footer)$$footer$$endif$]
+// numero de post (n / total) al pie; se apaga con `no-slide-number: true`
+#let _slidenum = $if(no-slide-number)$false$else$true$endif$
+
+#set text(
+  font: ($if(mainfont)$"$mainfont$"$else$"Liberation Sans"$endif$,),
+  size: _fontsize,
+)
+#set par(justify: false, leading: 0.7em)
+#show heading: it => it.body
+
+// span .sff/.sans -> fuente secundaria configurable
+#let sff(body) = text(font: _sansfont, body)
+
+#let blockquote(body) = block(inset: (left: 1.5em))[#body]
+#let horizontalrule = align(center)[#v(0.3em) #text(size: 1.3em)[\u{2042}] #v(0.3em)]
+#let endnote(num, contents) = stack(dir: ltr, spacing: 3pt, super[#num], contents)
+#show terms: it => it.children.map(c => [#strong[#c.term] #block(inset: (left: 1.5em))[#c.description]]).join()
+
+// Un post = una pagina. pagecolor pinta el fondo; image-path lo cubre (fit cover).
+// textcolor ya viene resuelto por el filtro. flush-top desactiva el centrado
+// vertical; flush-left alinea a la izquierda en vez de centrar (los nombres
+// evitan chocar con las palabras de alineacion top/left de typst).
+#let post(
+  pagecolor: none,
+  image-path: none,
+  textcolor: rgb("#2d2d2d"),
+  fontsize: none,
+  flush-top: false,
+  flush-left: false,
+  body,
+) = {
+  page(
+    width: _w, height: _h, margin: _margin,
+    fill: if pagecolor != none { pagecolor } else { white },
+    background: if image-path != none { image(image-path, width: 100%, height: 100%, fit: "cover") },
+    footer: if _footer != [] or _slidenum {
+      context {
+        set text(size: 0.72em, fill: textcolor)
+        let num = if _slidenum {
+          [#counter(page).get().first() / #counter(page).final().first()]
+        } else { [] }
+        // marca centrada y numero a la derecha; la columna izquierda equilibra
+        grid(columns: (1fr, auto, 1fr),
+          [], align(center, _footer), align(right + horizon, num))
+      }
+    },
+  )[
+    #set text(fill: textcolor, size: if fontsize != none { fontsize } else { _fontsize })
+    #let halign = if flush-left { left } else { center }
+    #let valign = if flush-top { top } else { horizon }
+    #align(halign + valign)[#body]
+  ]
+}
+
+$body$

@@ -7,3 +7,5 @@ pdf-engine: xelatex
 filters:
   - pandoc-crossref
   - citeproc
+  # tipografia/alineacion/color por clases CSS-like (pfa-*, ver fonts-and-alignment)
+  - fonts-and-alignment.lua

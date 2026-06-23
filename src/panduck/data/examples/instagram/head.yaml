@@ -1,0 +1,24 @@
+---
+# Tamano de pagina. Instagram vertical 4:5 = 1080x1350 px (10cm x 12.5cm).
+# Para carrusel cuadrado 1:1 usar width: 11cm y height: 11cm.
+width: 10cm
+height: 12.5cm
+margin: 0.9cm
+fontsize: 14pt
+# Tipografia: cualquier fuente instalada en el sistema, por su nombre de familia
+# tipografica (el que reporta `typst fonts`, que puede diferir del de fontconfig,
+# p. ej. "Recursive Sn Lnr St"). mainfont es el cuerpo; sansfont son los spans
+# .sff/.sans. typst no escanea ~/.fonts: panduck le pasa esa ruta automaticamente.
+mainfont: "Liberation Sans"
+# sansfont: "Liberation Sans"
+# Fondo y color por defecto de todos los posts (cada post puede sobreescribir
+# con atributos en su encabezado). Si no se fija textcolor, panduck elige
+# claro u oscuro por contraste con el fondo.
+pagecolor: "f4efe6"
+# textcolor: "2d2d2d"
+# background-image: bg.png
+# Pie comun a todos los posts. Acepta iconos FontAwesome como shortcodes
+# (:instagram: :globe: :envelope: :twitter: :youtube: ...). El numero de post
+# (n / total) se agrega a la derecha; se apaga con `no-slide-number: true`.
+footer: "{{footer}}"
+---

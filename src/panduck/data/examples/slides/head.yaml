@@ -6,7 +6,16 @@ date: "2026"
 footer: "{{footer}}"
 bibliography: references.bib
 csl: ieee.csl
-# Tema (opcional): la tipografia y el color de acento son configurables.
+# Portada (opcional):
+# title-image: "img/portada.png"   # imagen a la derecha del titulo
+# logos: ["img/logo-a.png", "img/logo-b.png"]  # fila al pie, alineada a la izquierda
+# affiliation: "Afiliación"
+# venue: "Lugar y ocasión"
+# Tipografia (opcional): principal, citas y codigo/prompts.
 # mainfont: "Liberation Sans"
-# accent: "#eb811b"
+# quotefont: "Liberation Serif"
+# monofont: "Fira Code"
+# Tamaños (opcional): logo-height: 1.4cm | end-image-height: 5cm
+# Tema azul marino + magenta por defecto; accent se puede sobreescribir (pero
+# el # por variable rompe typst, asi que conviene dejar el default).
 ---

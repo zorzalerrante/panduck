@@ -9,5 +9,8 @@ filters:
   - citeproc
   # post-citeproc: aplana los Cite para que el writer de typst no emita #cite
   - typst-flatten-cites.lua
+  # estilos inline (tamano/versalitas/peso/familia/color) por clases pfa-*; corre
+  # ANTES de la particion para ver los Span/Div antes de envolverlos en #slide[]
+  - fonts-and-alignment.lua
   # parte el cuerpo en slides y traduce columnas, fondos y diagramas Graphviz
   - typst-slides.lua

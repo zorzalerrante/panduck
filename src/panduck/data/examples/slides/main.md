@@ -33,9 +33,48 @@ digraph G {
 }
 ```
 
-## Cita destacada {.center background="#222831"}
+## Cita {.quote}
 
 "Lo que se mide, se gestiona."
+
+*Peter Drucker*
+
+## {.statement}
+
+**Una idea importante** se resalta con una slide de declaración.
+
+El texto va grande y centrado sobre fondo navy.
+
+## Callouts
+
+::: definition
+Un *callout* es una caja con etiqueta y color para destacar contenido.
+:::
+
+::: warning
+Los tipos disponibles son note, tip, warning, alert, theorem, definition y prompt.
+:::
+
+::: {.theorem title="Regla práctica"}
+Un buen prompt necesita vocabulario, estructura y contexto.
+:::
+
+## Un prompt {.smaller}
+
+Los prompts se muestran con tipografía de código:
+
+::: prompt
+Resume el siguiente texto en tres puntos **(tarea)**, en tono formal **(requisito)**, para una audiencia técnica **(contexto)**.
+:::
+
+## Código
+
+El código usa Fira Code a 0.9em:
+
+```python
+def saludar(nombre):
+    return f"Hola, {nombre}"
+```
 
 # Resultados
 
@@ -48,3 +87,7 @@ digraph G {
 ## Referencias {.smaller}
 
 <div id="refs"></div>
+
+## ¡Gracias! {.end}
+
+correo@ejemplo.cl

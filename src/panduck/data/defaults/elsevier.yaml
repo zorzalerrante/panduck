@@ -8,5 +8,8 @@ filters:
   - process-affiliations.lua
   - pandoc-crossref
   - citeproc
+  # despues de strip-header-includes para que su inyeccion (ulem/varwidth, solo si
+  # se usan esas clases) sobreviva; tipografia/alineacion/color por clases pfa-*
+  - fonts-and-alignment.lua
   # corre despues de citeproc: inserta \section*{Funding} antes de las referencias
   - insert-funding-before-refs.lua

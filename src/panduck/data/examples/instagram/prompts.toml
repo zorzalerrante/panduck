@@ -1,0 +1,12 @@
+# Campos que `panduck init instagram` pregunta. Las claves corresponden a los
+# marcadores {{clave}} en head.yaml y main.md. Este archivo no se copia al
+# directorio del usuario.
+[[prompts]]
+key = "titulo"
+question = "Titulo (lo que se anuncia)"
+default = "El titulo de la obra"
+
+[[prompts]]
+key = "footer"
+question = "Pie de cada post (acepta :instagram: :globe: etc.)"
+default = ":instagram: mi.cuenta    :globe: misitio.cl"

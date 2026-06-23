@@ -1,16 +1,12 @@
 // Plantilla de slides para panduck (typst), con un tema inspirado en Metropolis:
 // fondo claro, titulo arriba a la izquierda con una linea fina debajo, slides de
-// seccion en teal oscuro y una barra de progreso fina al pie. La tipografia y el
-// color de acento se configuran desde head.yaml (mainfont, accent).
+// seccion en azul marino y una barra de progreso fina al pie. La tipografia se
+// configura desde head.yaml (mainfont/quotefont/monofont); el color base (mdark)
+// y el de acento estan en el template (ver "Tema CENIA" mas abajo).
 //
 // Reemplaza la plantilla typst por defecto de pandoc, asi que reincluye a mano
 // las definiciones que el writer presupone (blockquote, horizontalrule, endnote).
 // El filtro typst-slides.lua parte el cuerpo en llamadas #slide[] / #section-slide[].
-
-#let blockquote(body) = [
-  #set text( size: 0.92em )
-  #block(inset: (left: 1.5em, top: 0.2em, bottom: 0.2em))[#body]
-]
 
 #let horizontalrule = [
   #line(start: (25%,0%), end: (75%,0%))
@@ -29,19 +25,52 @@
     .join()
 }
 
-// ---- Tema Metropolis --------------------------------------------------------
+// ---- Tema CENIA (inspirado en Metropolis) -----------------------------------
 
-#let mdark = rgb("#23373b")        // teal oscuro: titulos, texto, fondo de seccion
-#let accent = $if(accent)$rgb("$accent$")$else$rgb("#eb811b")$endif$  // naranja de acento
+#let mdark = rgb("#0A0E50")        // azul marino: titulos, texto, fondo de seccion
+#let accent = $if(accent)$rgb("$accent$")$else$rgb("#CF3889")$endif$  // magenta CENIA de acento
 #let footer-text = [$if(footer)$$footer$$else$$if(title)$$title$$endif$$endif$]
+#let base-margin = (x: 1.3cm, top: 1.0cm, bottom: 0.85cm)
+// tamanos configurables desde head.yaml (longitudes, sin # ni _, no sufren escape)
+#let logo_height = $if(logo-height)$$logo-height$$else$1.4cm$endif$
+#let end_image_height = $if(end-image-height)$$end-image-height$$else$5cm$endif$
+// fuentes: principal (mainfont), citas (quotefont, default = principal) y
+// codigo/prompts (monofont, default = Fira Code)
+#let mainfont_name = $if(mainfont)$"$mainfont$"$else$"Liberation Sans"$endif$
+#let quotefont_name = $if(quotefont)$"$quotefont$"$else$mainfont_name$endif$
+#let monofont_name = $if(monofont)$"$monofont$"$else$"Fira Code"$endif$
+// versalitas sinteticas para [texto]{.sc}: muchas fuentes (p.ej. Space Grotesk)
+// no traen la feature OpenType smcp. Se simulan dejando las mayusculas
+// originales a tamano completo y reduciendo solo las minusculas (pasadas a
+// mayuscula) a ~0.78em, asi las iniciales se ven mas grandes que el resto,
+// como en unas versalitas reales. Funciona con cualquier tipografia.
+#let sc(body) = {
+  set text(tracking: 0.04em)
+  show regex("\p{Ll}+"): it => text(size: 0.78em)[#upper(it)]
+  body
+}
+
+// Cita en linea (parrafo con `>`): barra de acento a la izquierda, tipografia
+// de citas (quotefont) y cursiva, como el estilo de las slides `.quote`. Va
+// despues del tema porque usa accent, mdark y quotefont_name (typst captura el
+// scope al definir la funcion, no al invocarla).
+#let blockquote(body) = block(
+  stroke: (left: 3pt + accent),
+  inset: (left: 1em, top: 0.3em, bottom: 0.3em),
+)[
+  #set text(font: quotefont_name, fill: mdark, style: "italic", size: 0.95em)
+  #body
+]
 
 #set page(
   paper: "presentation-16-9",
-  margin: (x: 2cm, top: 1.5cm, bottom: 1.4cm),
+  margin: base-margin,
   fill: white,
+  // el footer baja hacia el borde inferior para no toparse con las notas al pie
+  footer-descent: 0.45cm,
   footer: context [
     #set text(size: 10pt, fill: luma(45%))
-    #footer-text #h(1fr) #counter(page).display()
+    #footer-text #h(1fr) #counter(page).display() / #counter(page).final().first()
   ],
   // barra de progreso al borde inferior (estilo Metropolis)
   foreground: context {
@@ -51,7 +80,7 @@
   },
 )
 #set text(
-  font: ($if(mainfont)$"$mainfont$"$else$"Liberation Sans"$endif$,),
+  font: (mainfont_name,),
   size: $if(fontsize)$$fontsize$$else$22pt$endif$,
   fill: mdark,
 )
@@ -62,15 +91,83 @@
 // en slides los pies de imagen van sin numero ("Figura 1:"): solo el texto
 #set figure(numbering: none)
 #show figure.caption: set text(size: 0.8em, fill: luma(40%))
+// las notas al pie (referencias) van pequenas. La separacion entre notas
+// consecutivas se controla con `gap` (pequeno); la distancia al footer de
+// atribucion se logra con `footer-descent` en #set page, no con un pad por
+// entrada (que inflaba el espacio cuando hay varias notas en una slide).
+#show footnote.entry: it => text(size: 11pt, fill: luma(40%), it)
+#set footnote.entry(
+  separator: line(length: 30%, stroke: 0.5pt + luma(70%)),
+  gap: 0.45em,
+  clearance: 1em,
+)
+// codigo: Fira Code a escala 0.9; los bloques con fondo tenue
+#show raw: set text(font: monofont_name, size: 0.9em)
+#show raw.where(block: true): it => block(fill: luma(96%), inset: 0.6em, radius: 3pt, width: 100%, it)
+// tablas: el writer de pandoc no emite table.header, asi que la primera fila
+// (y: 0) se estiliza como encabezado: fondo navy solido con texto blanco. Las
+// filas alternan un tono muy tenue (zebra) y la primera columna va en negrita
+// navy. Asi una tabla en markdown puro queda coloreada con el tema, sin typst.
+#set table(
+  inset: 7pt,
+  stroke: (_, y) => if y == 0 { (bottom: 1.2pt + mdark) } else { (bottom: 0.5pt + luma(88%)) },
+  fill: (_, y) => if y == 0 { mdark } else if calc.odd(y) { mdark.lighten(94%) } else { white },
+)
+// El orden importa: la regla de y:0 va despues para ganar en la celda (0,0).
+#show table.cell.where(x: 0): set text(weight: "bold", fill: mdark)
+#show table.cell.where(y: 0): set text(weight: "bold", fill: white)
+
+// ---- Callouts (alertas, advertencias, teoremas, prompts) --------------------
+// Cada tipo es una clase de div: ::: warning / ::: theorem / ::: prompt ...
+// con `title=` opcional para sobreescribir la etiqueta. `prompt` usa monofont.
+#let callout(kind: "note", title: none, body) = {
+  let palette = (
+    note:       (mdark,          "Nota"),
+    tip:        (rgb("#1F8A70"), "Consejo"),
+    warning:    (rgb("#C77D00"), "Advertencia"),
+    alert:      (accent,         "Importante"),
+    important:  (accent,         "Importante"),
+    theorem:    (rgb("#6A2C9C"), "Teorema"),
+    definition: (mdark,          "Definición"),
+    prompt:     (accent,         "Prompt"),
+  )
+  let entry = palette.at(kind, default: (accent, kind))
+  let col = entry.at(0)
+  let label = if title != none { title } else { entry.at(1) }
+  block(
+    fill: col.lighten(90%),
+    stroke: (left: 3pt + col),
+    inset: (x: 0.9em, y: 0.55em),
+    radius: 3pt,
+    width: 100%,
+  )[
+    #text(weight: "bold", fill: col, size: 0.7em)[#upper(label)]
+    #v(0.25em)
+    #if kind == "prompt" {
+      set text(font: monofont_name, size: 0.9em)
+      body
+    } else {
+      body
+    }
+  ]
+}
 
 // Slide de contenido: titulo arriba a la izquierda + linea fina debajo.
-#let slide(title: none, bg: none, bg-image: none, centered: false, smaller: false, body) = {
+// full: true -> foco en imagen (margen minimo arriba/lados, a sangre). El margen
+// inferior se mantiene como el base (0.85cm) para que el footer de atribucion y
+// las notas al pie no se salgan de la slide (en modo full la imagen va centrada,
+// asi que ese margen solo recorta un poco el sangrado inferior).
+#let slide(title: none, bg: none, bg-image: none, centered: false, smaller: false, full: false, body) = {
   let dark-bg = bg != none or bg-image != none
   page(
     fill: if dark-bg { bg } else { white },
+    margin: if full { (x: 0.5cm, top: 0.5cm, bottom: base-margin.bottom) } else { base-margin },
     background: if bg-image != none { image(bg-image, width: 100%, height: 100%, fit: "cover") },
   )[
-    #set text(size: if smaller { 17pt } else { 22pt }, fill: if dark-bg { white } else { mdark })
+    #set text(size: if full { 14pt } else if smaller { 17pt } else { 22pt }, fill: if dark-bg { white } else { mdark })
+    // sobre fondo oscuro las notas al pie van en claro para contrastar
+    #show footnote.entry: it => text(size: 11pt, fill: if dark-bg { luma(80%) } else { luma(40%) }, it)
+    #set footnote.entry(separator: line(length: 30%, stroke: 0.5pt + (if dark-bg { luma(55%) } else { luma(70%) })))
     #if title != none {
       v(0.1em)
       text(size: 26pt, weight: "medium", fill: if dark-bg { white } else { mdark })[#title]
@@ -78,7 +175,7 @@
       line(length: 100%, stroke: 1.2pt + (if dark-bg { white } else { mdark }))
       v(0.7em)
     }
-    #if centered {
+    #if full or centered {
       align(center + horizon)[#body]
     } else {
       body
@@ -86,7 +183,63 @@
   ]
 }
 
-// Slide de seccion (encabezado # de nivel 1): pagina completa en teal oscuro.
+// Slide de cita: texto grande con barra de acento a la izquierda; la atribucion
+// se escribe en *cursiva* y queda en color de acento.
+#let quote-slide(body) = {
+  page(fill: white, footer: none)[
+    #align(horizon)[
+      #block(stroke: (left: 3pt + accent), inset: (left: 1em, top: 0.3em, bottom: 0.3em))[
+        // sin cursiva automatica: el cuerpo va en estilo normal y cada quien
+        // decide que poner en *cursiva*. La barra de acento a la izquierda
+        // distingue la cita.
+        #set text(size: 30pt, fill: mdark, font: quotefont_name)
+        #set par(leading: 0.55em)
+        #body
+      ]
+    ]
+  ]
+}
+
+// Slide final ("cierre"): imagen opcional arriba, titulo grande centrado, regla
+// de acento y datos de contacto debajo. La imagen se pasa con
+// `## Titulo {.end image="ruta.png"}` (la ruta va por el filtro, sin escape).
+#let end-slide(title: none, image: none, body) = {
+  page(fill: white, footer: none)[
+    #set block(spacing: 0.3em)
+    #align(center + horizon)[
+      #if image != none {
+        std.image(image, height: end_image_height)
+        v(0.3em)
+      }
+      #if title != none {
+        text(size: 54pt, weight: "medium", fill: mdark)[#title]
+        v(0.9em)
+        line(length: 26%, stroke: 2.5pt + accent)
+        v(0.7em)
+      }
+      #text(size: 24pt, fill: luma(35%))[#body]
+    ]
+  ]
+}
+
+// Slide de declaracion ("statement"): fondo navy, texto grande centrado en
+// blanco para resaltar una idea. La frase clave va en **negrita** y se resalta
+// en color de acento. Se invoca con `## {.statement}`.
+#let statement-slide(body) = {
+  page(fill: mdark, footer: none)[
+    // sobre fondo navy las notas al pie deben ir en claro para contrastar
+    #show footnote.entry: it => text(size: 11pt, fill: luma(80%), it)
+    #set footnote.entry(separator: line(length: 30%, stroke: 0.5pt + luma(55%)))
+    #align(center + horizon)[
+      #set text(size: 32pt, fill: white, weight: "regular")
+      #set par(leading: 0.6em, justify: false)
+      #show strong: set text(fill: accent, weight: "medium")
+      #block(width: 82%)[#body]
+    ]
+  ]
+}
+
+// Slide de seccion (encabezado # de nivel 1): pagina completa en azul marino.
 #let section-slide(body) = {
   page(fill: mdark, footer: none)[
     #align(horizon)[
@@ -100,26 +253,56 @@
 // ---- Portada (title frame de Metropolis) ------------------------------------
 
 $if(title)$
+#let titleblock = block[
+  #text(size: 38pt, weight: "medium", fill: mdark)[$title$]
+  $if(subtitle)$
+  #v(0.3em)
+  #text(size: 22pt, fill: luma(40%))[$subtitle$]
+  $endif$
+  #v(0.5em)
+  #line(length: 100%, stroke: 2.5pt + accent)
+  #v(0.7em)
+  $if(author)$
+  #text(size: 20pt, fill: mdark)[$for(author)$$author$$sep$ #h(1.2em) $endfor$]
+  $endif$
+  $if(affiliation)$
+  #v(0.25em)
+  #stack(dir: ttb, spacing: 0.35em,
+    $for(affiliation)$text(size: 15pt, fill: luma(45%))[$affiliation$],$endfor$
+  )
+  $endif$
+  #v(0.7em)
+  #text(size: 13pt, fill: luma(45%))[$if(venue)$$venue$$endif$$if(venue)$$if(date)$ · $endif$$endif$$if(date)$$date$$endif$]
+  #v(1cm)
+]
 #page(footer: none)[
+  $if(title-image)$
   #align(horizon)[
-    #block[
-      #text(size: 38pt, weight: "medium", fill: mdark)[$title$]
-      $if(subtitle)$
-      #v(0.3em)
-      #text(size: 22pt, fill: luma(40%))[$subtitle$]
+    #grid(columns: (1fr, 0.85fr), column-gutter: 1.6em, align: horizon,
+      titleblock,
+      $if(title-image-credit)$
+      // credito vertical al costado de la imagen (estilo foto de periodico):
+      // texto pequeno rotado, leyendose de abajo hacia arriba.
+      grid(columns: (1fr, auto), column-gutter: 0.4em, align: horizon,
+        image("$title-image$", width: 100%),
+        rotate(-90deg, reflow: true)[#text(size: 9pt, fill: luma(55%))[$title-image-credit$]],
+      ),
+      $else$
+      image("$title-image$", width: 100%),
       $endif$
-      #v(0.5em)
-      #line(length: 100%, stroke: 2.5pt + accent)
-      #v(0.7em)
-      $if(author)$
-      #text(size: 20pt, fill: mdark)[$for(author)$$author$$sep$ #h(1.2em) $endfor$]
-      $endif$
-      $if(date)$
-      #v(0.3em)
-      #text(size: 16pt, fill: luma(45%))[$date$]
-      $endif$
-    ]
+    )
   ]
+  $else$
+  #align(horizon)[#titleblock]
+  $endif$
+  $if(logos)$
+  #place(bottom + left, dy: -0.1cm)[
+    #stack(dir: ltr, spacing: 1.6em,
+      $for(logos)$box(baseline: 50%, image("$logos$", height: logo_height))$sep$,
+      $endfor$
+    )
+  ]
+  $endif$
 ]
 $endif$
 

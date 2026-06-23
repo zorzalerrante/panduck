@@ -28,6 +28,28 @@ def typst_bin():
     return os.environ.get("PANDUCK_TYPST", "typst")
 
 
+def typst_font_args():
+    """`--font-path` para que typst encuentre fuentes de usuario.
+
+    typst (a diferencia de fontconfig) no escanea `~/.fonts` ni
+    `~/.local/share/fonts`, asi que las fuentes instaladas por el usuario no
+    aparecen salvo que se le pasen explicitamente. `PANDUCK_FONT_PATH` (o
+    `TYPST_FONT_PATHS`) agrega rutas extra. Nota: el nombre de familia que usa
+    typst es el typographic family de la fuente (p. ej. "Recursive Sn Lnr St",
+    no "Recursive Sans Linear Static"); verificar con `typst fonts`.
+    """
+    paths = []
+    extra = os.environ.get("PANDUCK_FONT_PATH") or os.environ.get("TYPST_FONT_PATHS")
+    if extra:
+        paths += extra.split(os.pathsep)
+    paths += [Path.home() / ".fonts", Path.home() / ".local" / "share" / "fonts"]
+    args = []
+    for p in paths:
+        if Path(p).is_dir():
+            args += ["--font-path", str(p)]
+    return args
+
+
 def profile_format(profile):
     """Lee el writer (`to:`) declarado en el perfil; None si no lo fija."""
     f = DATA / "defaults" / f"{profile}.yaml"
@@ -35,6 +57,20 @@ def profile_format(profile):
         m = re.search(r"^to:\s*(\S+)", f.read_text(), re.M)
         if m:
             return m.group(1)
+    return None
+
+
+def profile_png_dpi(profile):
+    """DPI de exportacion PNG declarado por el perfil (comentario `# panduck-png: N`).
+
+    None si el perfil no pide PNG. Se lee de un comentario porque pandoc valida
+    las claves de los defaults y rechazaria una clave propia.
+    """
+    f = DATA / "defaults" / f"{profile}.yaml"
+    if f.exists():
+        m = re.search(r"^#\s*panduck-png:\s*(\d+)", f.read_text(), re.M)
+        if m:
+            return int(m.group(1))
     return None
 
 
@@ -98,9 +134,19 @@ def cmd_build(args, extra):
         stem = next(s.stem for s in sources if s.suffix == ".md")
         typ = f"{stem}.typ"
         run(cmd + ["-o", typ])
+        fonts = typst_font_args()
         out = args.output or f"{stem}.pdf"
-        run([typst_bin(), "compile", typ, out])
+        run([typst_bin(), "compile", *fonts, typ, out])
         print(f"[panduck] listo: {out}")
+        # exportacion a PNG (una imagen por pagina). Algunos perfiles (instagram)
+        # la piden por defecto via `# panduck-png: N`; --png/--no-png la fuerzan.
+        default_dpi = profile_png_dpi(args.profile)
+        want_png = args.png or (default_dpi is not None and not args.no_png)
+        if want_png:
+            dpi = args.dpi or default_dpi or 144
+            base = out[:-4] if out.endswith(".pdf") else stem
+            run([typst_bin(), "compile", *fonts, typ, f"{base}-{{0p}}.png", "--ppi", str(dpi)])
+            print(f"[panduck] PNG: {base}-NN.png ({dpi} ppi)")
         return
     # cada perfil puede traer un reference-doc de Word en reference/<perfil>-reference.docx;
     # pandoc solo lo usa para docx (lo resuelve por ruta, no desde el data-dir)
@@ -233,6 +279,11 @@ def main():
     add_common(p_build)
     p_build.add_argument("-t", "--to", choices=OUTPUT_EXT, default="pdf")
     p_build.add_argument("-o", "--output")
+    p_build.add_argument("--png", action="store_true",
+                         help="exporta tambien una PNG por pagina (perfiles typst)")
+    p_build.add_argument("--no-png", action="store_true",
+                         help="desactiva la exportacion PNG por defecto del perfil")
+    p_build.add_argument("--dpi", type=int, help="DPI de la exportacion PNG (default del perfil o 144)")
 
     p_dist = sub.add_parser("dist", help="empaqueta tex + imagenes para submission")
     add_common(p_dist)

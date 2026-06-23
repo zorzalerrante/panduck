@@ -1,0 +1,18 @@
+# Posts de Instagram en PDF + PNG via typst. Cada encabezado # del markdown es
+# un post (una pagina); las opciones por post van como atributos del encabezado.
+# panduck genera el .typ con pandoc, lo compila a PDF con typst y ademas exporta
+# una PNG por post (ver cli.py). El DPI por defecto se declara aca:
+# panduck-png: 256
+# -citations: los posts no llevan bibliografia; sin esto un "@handle" de
+# Instagram se interpretaria como cita de pandoc
+from: markdown+smart-citations
+to: typst
+standalone: true
+template: instagram
+filters:
+  # estilos inline (tamano/versalitas/peso/familia/color) por clases pfa-*; corre
+  # ANTES de la particion para ver los Span/Div antes de envolverlos en #post[]
+  - fonts-and-alignment.lua
+  # parte el cuerpo en posts, traduce columnas e imagenes y resuelve el color
+  # de texto por contraste segun el fondo de cada post
+  - instagram-posts.lua
