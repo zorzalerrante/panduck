@@ -289,7 +289,7 @@ def main():
     add_common(p_dist)
     p_dist.add_argument("--dir", default="dist", help="directorio de salida")
 
-    for name in ("titlepage", "cover-letter"):
+    for name in ("titlepage", "cover-letter", "highlights"):
         p = sub.add_parser(name, help=f"genera {name}.docx desde head.yaml")
         p.add_argument("-m", "--metadata", default="head.yaml")
         p.add_argument("-o", "--output")
