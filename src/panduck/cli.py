@@ -75,7 +75,7 @@ def profile_png_dpi(profile):
 
 
 def pandoc_env():
-    """PATH con pandoc-crossref y TEXINPUTS con la clase elsarticle."""
+    """PATH con pandoc-crossref y TEXINPUTS con las clases de texmf (elsarticle, sn-jnl)."""
     env = os.environ.copy()
     cabal = Path.home() / ".cabal" / "bin"
     if shutil.which("pandoc-crossref") is None and (cabal / "pandoc-crossref").exists():

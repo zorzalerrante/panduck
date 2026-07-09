@@ -1,0 +1,22 @@
+# Campos que `panduck init springer` pregunta al crear el proyecto. Cada clave
+# corresponde a un marcador {{clave}} en head.yaml. Este archivo no se copia al
+# directorio del usuario.
+[[prompts]]
+key = "titulo"
+question = "Titulo del articulo"
+default = "Titulo del trabajo"
+
+[[prompts]]
+key = "autor"
+question = "Autor(a) correspondiente"
+default = "Nombre Apellido"
+
+[[prompts]]
+key = "email"
+question = "Email del autor correspondiente"
+default = "autor@ejemplo.cl"
+
+[[prompts]]
+key = "afiliacion"
+question = "Afiliacion principal"
+default = "Universidad de Chile, Santiago, Chile"

@@ -1,0 +1,18 @@
+from: markdown+smart+citations
+standalone: true
+pdf-engine: pdflatex
+template: springer
+metadata:
+  # la clase sn-jnl empareja los superindices de autor con etiquetas numericas,
+  # asi que las afiliaciones se numeran sin el prefijo "aff" de elsarticle
+  affiliation-id-prefix: ""
+filters:
+  # los filtros lua se resuelven desde <data-dir>/filters
+  - process-affiliations.lua
+  - pandoc-crossref
+  - citeproc
+  # despues de citeproc; tipografia/alineacion/color por clases pfa-* (inyecta
+  # ulem/varwidth en header-includes, que este template si renderiza)
+  - fonts-and-alignment.lua
+  # corre despues de citeproc: inserta \section*{Funding} antes de las referencias
+  - insert-funding-before-refs.lua

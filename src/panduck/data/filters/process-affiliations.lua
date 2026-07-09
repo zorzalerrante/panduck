@@ -1,20 +1,27 @@
--- Processes author affiliations into the elsarticle group system.
--- Collects unique affiliations, assigns sequential IDs (aff1, aff2, ...),
--- and adds to metadata:
+-- Processes author affiliations into a group system for journal templates.
+-- Collects unique affiliations, assigns sequential IDs, and adds to metadata:
 --   affiliation_groups: [{id, name}] — for \address[id]{name} in template
 --   author.affiliation_ids: "aff1,aff2" — for \author[ids]{name} in template
+-- The ID prefix defaults to "aff" (elsarticle). A profile can set the meta
+-- key `affiliation-id-prefix` to "" for templates that need bare numeric IDs
+-- (Springer's sn-jnl matches author superscripts against integer labels).
 
 local stringify = pandoc.utils.stringify
 
 function Meta(m)
   if not m.authors then return m end
 
+  local prefix = 'aff'
+  if m['affiliation-id-prefix'] ~= nil then
+    prefix = stringify(m['affiliation-id-prefix'])
+  end
+
   local affil_list = {}  -- ordered: [{id, name}]
   local affil_map  = {}  -- name -> id
 
   local function get_id(name)
     if not affil_map[name] then
-      local id = 'aff' .. (1 + #affil_list)
+      local id = prefix .. (1 + #affil_list)
       affil_map[name] = id
       table.insert(affil_list, { id = id, name = name })
     end

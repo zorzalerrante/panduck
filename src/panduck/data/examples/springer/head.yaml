@@ -1,0 +1,31 @@
+---
+title: "{{titulo}}"
+authors:
+  - name: "{{autor}}"
+    email: "{{email}}"
+    corresponding: true
+    affiliation:
+      - "{{afiliacion}}"
+  - name: Segundo Autor
+    email: segundo@ejemplo.cl
+    affiliation:
+      - "{{afiliacion}}"
+      - Centro Nacional de Inteligencia Artificial, Santiago, Chile
+abstract: |
+  Escribe aqui el resumen en un parrafo: problema general, brecha en la
+  literatura, contribucion de este trabajo ("Aqui presentamos..."),
+  hallazgos principales y conclusion directa.
+keywords:
+  - palabra clave 1
+  - palabra clave 2
+  - palabra clave 3
+funding:
+  - Fondecyt 1234567
+bibliography: references.bib
+csl: ieee.csl
+
+# Referencias cruzadas: el texto escribe "Figura"/"Tabla" a mano, la cita va
+# con prefijo suprimido ([-@fig:x]).
+figPrefix: "Figura"
+tblPrefix: "Tabla"
+---
