@@ -81,6 +81,13 @@ No hay tests automatizados; la validación es compilar documentos reales. Copiar
 
 ## Decisiones de diseño
 
+- **Esquema de metadata de autores para papers de revista (contrato compartido).** Los templates de artículo de revista (`elsevier`, `springer`, y los que se agreguen) leen el mismo front matter, así el mismo `head.yaml` compila en cualquiera sin editar (verificado con un head de tres autores y afiliaciones compartidas en ambos perfiles; solo cambia el estilo de la revista, p. ej. superíndices `a`/`b` vs `1`/`2`). El contrato:
+  - `title`: string.
+  - `authors`: lista de `{name, email?, corresponding?, affiliation}`; `affiliation` es un string o una lista de strings. `corresponding: true` marca al autor de contacto.
+  - `abstract`: string (o bloque `|`). `keywords`: lista. `funding`: lista (opcional).
+  - `process-affiliations.lua` deduplica las afiliaciones, les asigna ids secuenciales (prefijo `aff` por defecto; `""` para `sn-jnl` vía `affiliation-id-prefix`) y expone `affiliation_groups` (`{id, name}`) más `author.affiliation_ids` al template. Cada template solo mapea esos campos a sus macros de clase (`\author`/`\address`/`\ead` en elsarticle; `\author*`/`\affil`/`\email` en sn-jnl).
+  - **Al agregar un template de revista**: leer estos campos y sumar al perfil `process-affiliations.lua` + `insert-funding-before-refs.lua` (más `citeproc`/`pandoc-crossref`/`fonts-and-alignment`). No inventar nombres de campo nuevos para autores.
+  - Fuera del contrato: los perfiles genéricos `default`/`paper` heredan el template estándar de pandoc, que espera `author:` (lista de strings simples), sin afiliaciones estructuradas; `dcc-informe` (informe de memoria) tiene su propio front matter en castellano (`nombre`/`guia`/`titulo`/`departamento`/`anho`). Un `head.yaml` de `paper` no es intercambiable con los de revista sin reescribir los autores.
 - **Referencias cruzadas con prefijo manual**: en los documentos en castellano el texto escribe "Figura"/"Tabla" a mano y la referencia va con prefijo suprimido: `[-@fig:x]`. La conversión desde xnos es `{@fig:x}` o `@fig:x` a `[-@fig:x]`.
 - **Los Makefiles locales de cada repo solo generan figuras** (dot, scripts) y delegan la compilación en `panduck build`.
 - **Slides con typst, no beamer** (junio 2026): beamer compila lento; reveal.js quedó descartado porque el output debe ser PDF. El perfil `slides` usa el writer typst de pandoc + `typst compile`. Detalles de la implementación:
