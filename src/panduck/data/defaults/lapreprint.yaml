@@ -1,0 +1,18 @@
+from: markdown+smart+citations
+standalone: true
+pdf-engine: xelatex
+template: lapreprint
+metadata:
+  # authblk pinta el argumento opcional como superindice literal, asi que las
+  # afiliaciones se numeran sin el prefijo "aff" (igual que sn-jnl)
+  affiliation-id-prefix: ""
+filters:
+  # los filtros lua se resuelven desde <data-dir>/filters
+  - process-affiliations.lua
+  # deriva leadauthor (apellido del primer autor) y shorttitle para el header
+  - lapreprint-meta.lua
+  - pandoc-crossref
+  - citeproc
+  # despues de citeproc; tipografia/alineacion/color por clases pfa-*
+  - fonts-and-alignment.lua
+  # nota: sin insert-funding-before-refs; el funding va al sidebar de metadata

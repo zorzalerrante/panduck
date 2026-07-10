@@ -1,0 +1,31 @@
+---
+title: "{{titulo}}"
+# leadauthor y shorttitle van en el header/pie; si se omiten, el filtro usa el
+# apellido del primer autor y el titulo completo.
+shorttitle: "{{titulo_corto}}"
+authors:
+  - name: "{{autor}}"
+    email: "{{email}}"
+    corresponding: true
+    orcid: 0000-0002-1825-0097
+    affiliation:
+      - "{{afiliacion}}"
+      - Centro Nacional de Inteligencia Artificial, Santiago, Chile
+  - name: Segundo Autor
+    affiliation: "{{afiliacion}}"
+abstract: |
+  Escribe aqui el resumen en un parrafo: problema general, brecha en la
+  literatura, contribucion de este trabajo ("Aqui presentamos..."),
+  hallazgos principales y conclusion directa.
+keywords:
+  - palabra clave 1
+  - palabra clave 2
+funding:
+  - Fondecyt 1234567
+bibliography: references.bib
+csl: apa-6th-edition.csl
+
+# Referencias cruzadas: el texto escribe "Figura"/"Tabla" a mano.
+figPrefix: "Figura"
+tblPrefix: "Tabla"
+---
