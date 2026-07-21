@@ -1,0 +1,34 @@
+# Libro estilo Tufte en PDF via typst: columna de texto angosta con margen
+# derecho ancho para las notas, dividido en capitulos (`#`) y partes
+# (`# Nombre {.part}`), con portada e indice. Comparte con el perfil `tufte` el
+# paquete toffee-tufte vendorizado y el filtro de notas al margen; lo que cambia
+# es la plantilla, que agrega la estructura de libro.
+from: markdown+smart+citations
+to: typst
+wrap: none  # no envolver la salida: un font-name largo partido en 2 lineas rompe el string typst
+standalone: true
+template: tufte-book
+filters:
+  # enganche para adaptar el documento antes de todo lo demas: no-op salvo que
+  # el directorio del documento traiga su propio panduck-pre.lua
+  - panduck-pre.lua
+  # paginas de parte (encabezados de nivel 1 con clase .part). Va ANTES de
+  # crossref: si no, crossref cuenta cada parte como un capitulo mas y la
+  # numeracion por capitulo queda corrida (Figura 2.1 en el capitulo 1).
+  - tufte-book.lua
+  # numeracion y referencias cruzadas. Con `chapters: true` en el head.yaml
+  # numera por capitulo (Figura 3.2); la plantilla apaga la numeracion nativa de
+  # typst para que no salga duplicada.
+  - pandoc-crossref
+  # bibliografia POR CAPITULO (una por unidad), no una sola al final: reemplaza a
+  # citeproc, corriendolo por separado en cada capitulo (ver el filtro)
+  - per-chapter-refs.lua
+  # post-citeproc: aplana los Cite para que el writer de typst no emita #cite
+  - typst-flatten-cites.lua
+  # arregla simbolos math que el writer typst emite con nombres viejos (\langle,
+  # \cap, \lceil...) y que typst 0.15 ya no reconoce
+  - typst-fix-symbols.lua
+  # estilos inline (tamano/versalitas/peso/familia/color) por clases pfa-*
+  - fonts-and-alignment.lua
+  # notas al margen, bloques ::: margin / ::: wide y encabezados sin numerar
+  - tufte.lua

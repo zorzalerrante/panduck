@@ -1,0 +1,12 @@
+digraph flujo {
+  rankdir=LR;
+  node [shape=box, style=rounded, fontname="Helvetica", fontsize=11];
+  edge [fontname="Helvetica", fontsize=10];
+
+  datos  [label="Datos crudos"];
+  limpio [label="Limpieza"];
+  modelo [label="Modelo"];
+  salida [label="Resultados"];
+
+  datos -> limpio -> modelo -> salida;
+}

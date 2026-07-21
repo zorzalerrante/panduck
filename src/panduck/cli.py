@@ -34,20 +34,38 @@ def typst_font_args():
     typst (a diferencia de fontconfig) no escanea `~/.fonts` ni
     `~/.local/share/fonts`, asi que las fuentes instaladas por el usuario no
     aparecen salvo que se le pasen explicitamente. `PANDUCK_FONT_PATH` (o
-    `TYPST_FONT_PATHS`) agrega rutas extra. Nota: el nombre de familia que usa
-    typst es el typographic family de la fuente (p. ej. "Recursive Sn Lnr St",
-    no "Recursive Sans Linear Static"); verificar con `typst fonts`.
+    `TYPST_FONT_PATHS`) agrega rutas extra, y un directorio `fonts/` junto al
+    documento sirve para las fuentes propias de ese documento (mismo espiritu que
+    `panduck-pre.lua`: lo especifico vive con las fuentes, no en panduck).
+    `data/fonts/` son las fuentes que panduck trae vendorizadas (p. ej. Fira Math,
+    el default de matematica de las slides), siempre disponibles sin instalar
+    nada. Nota: el nombre de familia que usa typst es el typographic family de la
+    fuente (p. ej. "Recursive Sn Lnr St", no "Recursive Sans Linear Static");
+    verificar con `typst fonts`.
     """
     paths = []
     extra = os.environ.get("PANDUCK_FONT_PATH") or os.environ.get("TYPST_FONT_PATHS")
     if extra:
         paths += extra.split(os.pathsep)
-    paths += [Path.home() / ".fonts", Path.home() / ".local" / "share" / "fonts"]
+    paths += [Path("fonts"), DATA / "fonts",
+              Path.home() / ".fonts", Path.home() / ".local" / "share" / "fonts"]
     args = []
     for p in paths:
         if Path(p).is_dir():
             args += ["--font-path", str(p)]
     return args
+
+
+def typst_package_args():
+    """`--package-path` con los paquetes typst vendorizados (toffee-tufte, drafting).
+
+    Es el analogo de TEXINPUTS con data/texmf: los paquetes viven en el repo, se
+    importan como `@local/<nombre>:<version>` y compilan sin red. No afecta a los
+    `@preview` que importe el documento: esos siguen resolviendose desde la cache
+    normal de typst.
+    """
+    packages = DATA / "typst-packages"
+    return ["--package-path", str(packages)] if packages.is_dir() else []
 
 
 def profile_format(profile):
@@ -134,9 +152,9 @@ def cmd_build(args, extra):
         stem = next(s.stem for s in sources if s.suffix == ".md")
         typ = f"{stem}.typ"
         run(cmd + ["-o", typ])
-        fonts = typst_font_args()
+        typst_args = typst_font_args() + typst_package_args()
         out = args.output or f"{stem}.pdf"
-        run([typst_bin(), "compile", *fonts, typ, out])
+        run([typst_bin(), "compile", *typst_args, typ, out])
         print(f"[panduck] listo: {out}")
         # exportacion a PNG (una imagen por pagina). Algunos perfiles (instagram)
         # la piden por defecto via `# panduck-png: N`; --png/--no-png la fuerzan.
@@ -145,7 +163,7 @@ def cmd_build(args, extra):
         if want_png:
             dpi = args.dpi or default_dpi or 144
             base = out[:-4] if out.endswith(".pdf") else stem
-            run([typst_bin(), "compile", *fonts, typ, f"{base}-{{0p}}.png", "--ppi", str(dpi)])
+            run([typst_bin(), "compile", *typst_args, typ, f"{base}-{{0p}}.png", "--ppi", str(dpi)])
             print(f"[panduck] PNG: {base}-NN.png ({dpi} ppi)")
         return
     # cada perfil puede traer un reference-doc de Word en reference/<perfil>-reference.docx;

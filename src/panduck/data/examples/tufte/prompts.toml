@@ -1,0 +1,17 @@
+# Campos que `panduck init tufte` pregunta al crear el proyecto. Cada clave
+# corresponde a un marcador {{clave}} en head.yaml. Este archivo no se copia al
+# directorio del usuario.
+[[prompts]]
+key = "titulo"
+question = "Titulo del reporte"
+default = "Titulo del reporte"
+
+[[prompts]]
+key = "autor"
+question = "Autor(a)"
+default = "Nombre Apellido"
+
+[[prompts]]
+key = "fecha"
+question = "Fecha"
+default = "Julio de 2026"

@@ -3,6 +3,7 @@
 # pandoc y luego corre `typst compile` para producir el PDF (ver cli.py).
 from: markdown+smart+citations
 to: typst
+wrap: none  # no envolver la salida: un font-name largo partido en 2 lineas rompe el string typst
 standalone: true
 template: slides
 filters:
@@ -12,5 +13,8 @@ filters:
   # estilos inline (tamano/versalitas/peso/familia/color) por clases pfa-*; corre
   # ANTES de la particion para ver los Span/Div antes de envolverlos en #slide[]
   - fonts-and-alignment.lua
+  # arregla simbolos math que el writer typst emite con nombres viejos (\langle,
+  # \cap, \lceil...); antes de la particion, que serializa el contenido a typst
+  - typst-fix-symbols.lua
   # parte el cuerpo en slides y traduce columnas, fondos y diagramas Graphviz
   - typst-slides.lua

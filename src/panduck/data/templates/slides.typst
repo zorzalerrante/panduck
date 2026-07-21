@@ -85,6 +85,13 @@
   fill: mdark,
 )
 #set par(justify: false, leading: 0.7em)
+// Matematica sans y upright por omision: el cuerpo de las slides es sans, asi que
+// el default de typst (New Computer Modern Math, serif e italica) desentona.
+// `mathfont` (default Fira Math, vendorizada en panduck/data/fonts) le da una sans
+// con tabla MATH: escala los delimitadores y combina con el cuerpo; `math.upright`
+// quita la cursiva y `math-scale` (default 1) la escala respecto al cuerpo.
+#show math.equation: set text(font: ($if(mathfont)$"$mathfont$"$else$"Fira Math"$endif$,), size: $if(math-scale)$$math-scale$$else$1$endif$em)
+#show math.equation: it => math.upright(it)
 #show heading: set text(fill: mdark)
 #set list(marker: box(width: 0.42em, height: 0.42em, fill: accent, baseline: -0.1em), spacing: 0.9em)
 #set enum(spacing: 0.9em)

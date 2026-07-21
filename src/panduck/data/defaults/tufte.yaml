@@ -1,0 +1,27 @@
+# Reporte cientifico estilo Tufte en PDF via typst: columna de texto angosta y
+# margen derecho ancho para las notas. Envuelve el paquete toffee-tufte, que va
+# vendorizado en data/typst-packages (se importa como @local, sin red). panduck
+# genera el .typ con pandoc y luego corre `typst compile` (ver cli.py).
+from: markdown+smart+citations
+to: typst
+wrap: none  # no envolver la salida: un font-name largo partido en 2 lineas rompe el string typst
+standalone: true
+template: tufte
+filters:
+  # enganche para adaptar el documento antes de todo lo demas: no-op salvo que
+  # el directorio del documento traiga su propio panduck-pre.lua, que gana por
+  # la resolucion por nombre de pandoc (cwd antes que data-dir)
+  - panduck-pre.lua
+  # numeracion y referencias cruzadas de figuras, tablas y ecuaciones. La
+  # plantilla apaga la numeracion nativa de typst para que no salga duplicada.
+  - pandoc-crossref
+  - citeproc
+  # post-citeproc: aplana los Cite para que el writer de typst no emita #cite
+  - typst-flatten-cites.lua
+  # arregla simbolos math que el writer typst emite con nombres viejos (\langle,
+  # \cap, \lceil...) y que typst 0.15 ya no reconoce
+  - typst-fix-symbols.lua
+  # estilos inline (tamano/versalitas/peso/familia/color) por clases pfa-*
+  - fonts-and-alignment.lua
+  # notas al margen, bloques ::: margin / ::: wide y encabezados sin numerar
+  - tufte.lua

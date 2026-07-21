@@ -1,0 +1,16 @@
+-- Punto de enganche para adaptar un documento ANTES del resto del pipeline.
+-- Aca no hace nada: es el default que se usa cuando el documento no trae el suyo.
+--
+-- Un `panduck.yaml` local no sirve para esto, porque pandoc CONCATENA las listas
+-- de filtros y los del documento quedan al final, despues de crossref, citeproc y
+-- del filtro del perfil. Un adaptador que necesite correr antes (renombrar clases
+-- de divs, mover un id para que crossref lo vea, reescribir referencias) no tiene
+-- donde entrar.
+--
+-- La salida es la resolucion por nombre de pandoc: busca `panduck-pre.lua`
+-- primero en el directorio del documento y solo despues en data/filters/. Basta
+-- entonces con dejar un `panduck-pre.lua` junto a las fuentes para que gane sobre
+-- este y corra de primero. Caso de uso: un repo con su propio vocabulario de
+-- markdown que quiere compilar con un perfil de panduck sin reescribir sus
+-- archivos (ver el perfil `tufte` en CLAUDE.md).
+return {}

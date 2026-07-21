@@ -1,0 +1,142 @@
+// Plantilla de reporte cientifico estilo Tufte para panduck (typst). Envuelve el
+// paquete toffee-tufte, vendorizado en data/typst-packages como @local (compila
+// sin red; ver typst_package_args en cli.py). El rasgo del estilo es la columna
+// de texto angosta con un margen derecho ancho donde viven las notas: el filtro
+// tufte.lua manda ahi las notas al pie (^[...]) y los bloques ::: margin.
+//
+// Reemplaza la plantilla typst por defecto de pandoc, asi que reincluye a mano
+// las definiciones que el writer presupone (blockquote, horizontalrule, endnote).
+
+#import "@local/toffee-tufte:0.1.1": *
+
+#let horizontalrule = [
+  #line(start: (25%,0%), end: (75%,0%))
+]
+
+#let endnote(num, contents) = [
+  #stack(dir: ltr, spacing: 3pt, super[#num], contents)
+]
+
+#show terms: it => {
+  it.children
+    .map(child => [
+      #strong[#child.term]
+      #block(inset: (left: 1.5em, top: -0.4em))[#child.description]
+      ])
+    .join()
+}
+
+#let blockquote(body) = block(
+  inset: (left: 1em, top: 0.3em, bottom: 0.3em),
+  stroke: (left: 2pt + luma(70%)),
+)[#body]
+
+// Tope de altura para las imagenes de margen (lo aplica tufte.lua dentro de cada
+// `::: margin`): una figura de margen alta se desborda por el pie porque drafting
+// no pasa las notas a la pagina siguiente. Solo recorta las que superan el tope.
+#let margen_img_alto = $if(margin-image-height)$$margin-image-height$$else$4cm$endif$
+#let cap-margin-image(it) = {
+  if it.at("alt", default: none) == "__cap__" { it } else {
+    layout(size => {
+      let nat = measure(image(it.source, alt: "__cap__", width: size.width))
+      if nat.height > margen_img_alto {
+        image(it.source, alt: "__cap__", height: margen_img_alto)
+      } else { it }
+    })
+  }
+}
+
+// La numeracion de figuras y tablas la pone pandoc-crossref en el texto del
+// caption; sin apagar la nativa de typst el numero saldria dos veces ("Figura 1:
+// Figure 1: ..."). Va ANTES del show para quedar en el scope mas externo: las
+// notas al pie (modo full) se componen en el area de pagina, fuera de `doc`, y
+// un `set` puesto dentro del cuerpo no las alcanzaria.
+#set figure(numbering: none)
+
+#show: template.with(
+// Los autores van como un unico string, no como array: el encabezado del
+// paquete imprime el array en crudo (("A",)) en vez de unirlo, y de paso el
+// separador queda en castellano y no en el "and" que usa el paquete.
+$if(anonymous)$
+  authors: "Anonymous",
+$else$
+$if(authors)$
+  authors: "$for(authors)$$if(authors.name)$$authors.name$$else$$authors$$endif$$sep$, $endfor$",
+$elseif(author)$
+  authors: "$for(author)$$author$$sep$, $endfor$",
+$endif$
+$endif$
+$if(title)$
+  title: [$title$],
+$endif$
+$if(date)$
+  date: [$date$],
+$endif$
+$if(abstract)$
+  abstract: [$abstract$],
+$endif$
+$if(toc)$
+  toc: true,
+$endif$
+$if(full)$
+  full: true,
+$endif$
+$if(no-header)$
+  header: false,
+$endif$
+$if(no-footer)$
+  footer: false,
+$endif$
+// Tipografia desde head.yaml. Sin mainfont queda la pila del paquete (IBM Plex
+// Sans y respaldos); el nombre es el typographic family que ve typst (revisar
+// con `typst fonts`), no el de fontconfig. Va como parametro del paquete y no
+// como `set text` externo porque el paquete fija la fuente adentro y ganaria;
+// asi alcanza tambien al titulo y al encabezado, no solo al cuerpo.
+$if(mainfont)$
+  font: ("$mainfont$",),
+$endif$
+)
+
+$if(fontsize)$
+#set text(size: $fontsize$)
+$endif$
+$if(monofont)$
+#show raw: set text(font: ("$monofont$",))
+$endif$
+$if(mathfont)$
+// Matematica en la fuente `mathfont` (p. ej. Lete Sans Math). Se usa esa fuente y
+// NO mainfont para las letras: mainfont (Beauchef) no tiene tabla MATH y sin ella
+// los delimitadores no escalan (los parentesis de una matriz salen chicos). El
+// `math.upright` quita la cursiva; `set text(style: "normal")` no es confiable
+// (depende de la fuente y en varias deja la matematica en cursiva igual).
+// `math-scale` (default 1) escala la matematica respecto al cuerpo: algunas
+// fuentes math (p. ej. Fira Math) se ven grandes al lado del texto y ~0.9 calza.
+#show math.equation: set text(font: ("$mathfont$",), size: $if(math-scale)$$math-scale$$else$1$endif$em)
+#show math.equation: it => math.upright(it)
+$endif$
+
+// Pie de figura mas chico y a la izquierda (typst lo centra por defecto, lo que
+// en una columna angosta descuelga los pies de dos lineas); el prefijo que
+// escribe crossref ("Figura 1:", "Tabla 2:") va en negrita.
+#show figure.caption: it => {
+  set align(left)
+  set text(size: 8.5pt)
+  show regex("^(Figura|Tabla|Cuadro)\s+[0-9.]+:"): strong
+  it
+}
+// Mas aire entre las figuras de la columna principal (cuerpo y `.wide`) y el
+// texto; en las de margen se anula dentro del `::: margin` (ver tufte.lua).
+#show figure: set block(above: 1.9em, below: 1.9em)
+
+// Encabezados sin silabacion ni justificacion (el titulo del reporte lo maneja el
+// paquete: ver el parche en toffee-tufte lib.typ). El cuerpo si se silabea y
+// justifica (columna angosta), por eso va solo en heading, no global.
+#show heading: set text(hyphenate: false)
+#show heading: set par(justify: false)
+
+// El numero de la ecuacion tambien lo pone crossref, dentro de la ecuacion. Este
+// `set` va DESPUES del show (al reves que el de figure) porque el paquete fija
+// `math.equation(numbering: "(1)")` adentro y solo un `set` mas interno lo gana.
+#set math.equation(numbering: none)
+
+$body$

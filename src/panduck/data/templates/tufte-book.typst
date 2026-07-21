@@ -1,0 +1,235 @@
+// Plantilla de libro estilo Tufte para panduck (typst): columna de texto angosta
+// con margen derecho ancho para las notas, dividido en capitulos y partes.
+//
+// Comparte con el perfil `tufte` el paquete toffee-tufte (vendorizado en
+// data/typst-packages como @local), pero solo le toma `sidenote` y `wideblock`:
+// la portada, el indice, los capitulos y los encabezados los define este archivo,
+// porque toffee-tufte esta pensado para un reporte de una pieza y no tiene
+// nocion de capitulo. El filtro tufte-book.lua convierte los encabezados con
+// clase .part en llamadas a #part-page.
+//
+// Reemplaza la plantilla typst por defecto de pandoc, asi que reincluye a mano
+// las definiciones que el writer presupone (blockquote, horizontalrule, endnote).
+
+// Import completo y no por nombre: `set-page-properties` y `set-margin-note-defaults`
+// vienen de drafting y toffee-tufte solo los reexporta a traves del `*`.
+#import "@local/toffee-tufte:0.1.1": *
+
+#let horizontalrule = [
+  #line(start: (25%,0%), end: (75%,0%))
+]
+
+#let endnote(num, contents) = [
+  #stack(dir: ltr, spacing: 3pt, super[#num], contents)
+]
+
+#show terms: it => {
+  it.children
+    .map(child => [
+      #strong[#child.term]
+      #block(inset: (left: 1.5em, top: -0.4em))[#child.description]
+      ])
+    .join()
+}
+
+// ---- Geometria -------------------------------------------------------------
+// El margen derecho ancho es donde viven las notas. `full` lo desactiva y manda
+// las notas al pie (lo resuelve el propio sidenote leyendo el estado fullwidth).
+#let es_full = $if(full)$true$else$false$endif$
+#let margen_izq = $if(inner-margin)$$inner-margin$$else$0.7in$endif$
+#let margen_der = if es_full { margen_izq } else {
+  $if(margin-width)$$margin-width$$else$3in$endif$
+}
+// Ancho del bloque de texto del cuerpo. drafting lo necesita para ubicar las
+// notas al margen; se le pasa explicito (ver set-page-properties mas abajo)
+// porque si no lo captura del contexto donde se llama, y ahi es la portada con
+// otros margenes. Con papersize distinto de carta, fijar `paperwidth` en el head.
+#let ancho_hoja = $if(paperwidth)$$paperwidth$$else$8.5in$endif$
+#let ancho_texto = ancho_hoja - margen_izq - margen_der
+#let color_acento = rgb($if(accent)$"$accent$"$else$"#A5211F"$endif$)
+
+#set document(title: "$title$"$if(author)$, author: ($for(author)$"$author$",$endfor$)$endif$)
+#fullwidth.update(es_full)
+
+#set page(
+  paper: "$if(papersize)$$papersize$$else$us-letter$endif$",
+  margin: (left: margen_izq, right: margen_der, top: 1in, bottom: 0.9in),
+  // Encabezado con el capitulo en curso, en el ancho completo (texto + margen).
+  header: context {
+    let pagina = here().page()
+    let capitulos = query(heading.where(level: 1))
+    // Sin encabezado en la pagina que abre un capitulo: ya lleva el titulo grande.
+    if capitulos.any(c => c.location().page() == pagina) { return }
+    let previos = capitulos.filter(c => c.location().page() < pagina)
+    if previos.len() == 0 { return }
+    set text(size: 8pt)
+    block(width: 100% + margen_der - margen_izq)[
+      #emph[#previos.last().body] #h(1fr) #emph[#counter(page).display()]
+    ]
+  },
+  footer: none,
+)
+
+#set text(
+  font: ($if(mainfont)$"$mainfont$"$else$"Libertinus Serif"$endif$,),
+  size: $if(fontsize)$$fontsize$$else$10pt$endif$,
+  lang: "$if(lang)$$lang$$else$es$endif$",
+)
+#set par(justify: true, spacing: 1.2em, leading: 0.65em)
+// Encabezados sin silabacion ni justificacion: un titulo largo no debe partirse
+// con guion ni estirarse. La portada y las paginas de parte (que no son
+// encabezados) lo fijan en su propio bloque.
+#show heading: set text(hyphenate: false)
+#show heading: set par(justify: false)
+#show link: set text(fill: color_acento)
+$if(monofont)$
+#show raw: set text(font: ("$monofont$",))
+$endif$
+$if(mathfont)$
+// Matematica en la fuente `mathfont` (p. ej. Lete Sans Math). Se usa esa fuente y
+// NO mainfont para las letras: mainfont (Beauchef) no tiene tabla MATH y sin ella
+// los delimitadores no escalan (los parentesis de una matriz salen chicos, sin
+// envolverla). `math.upright` quita la cursiva de las variables; se hace asi y no
+// con `set text(style: "normal")`, que no es confiable (depende de la fuente y en
+// varias deja la matematica en cursiva igual).
+// `math-scale` (default 1) escala la matematica respecto al cuerpo: algunas
+// fuentes math (p. ej. Fira Math) se ven grandes al lado del texto y ~0.9 calza.
+#show math.equation: set text(font: ("$mathfont$",), size: $if(math-scale)$$math-scale$$else$1$endif$em)
+#show math.equation: it => math.upright(it)
+$endif$
+#show raw.where(block: true): block.with(fill: luma(96%), inset: 6pt, radius: 3pt, width: 100%)
+
+#let blockquote(body) = block(
+  inset: (left: 1em, top: 0.3em, bottom: 0.3em),
+  stroke: (left: 2pt + luma(70%)),
+)[#body]
+
+// Tope de altura para las imagenes de margen (lo aplica tufte.lua dentro de cada
+// `::: margin`). drafting apila las notas hacia abajo sin pasarlas a la pagina
+// siguiente, asi que una figura de margen alta desborda por el pie. Solo recorta
+// las que superan el tope; las anchas o bajas quedan igual. El centinela `alt`
+// corta la recursion del `show`; `layout` mide con el ancho real del margen.
+#let margen_img_alto = $if(margin-image-height)$$margin-image-height$$else$4cm$endif$
+#let cap-margin-image(it) = {
+  if it.at("alt", default: none) == "__cap__" { it } else {
+    layout(size => {
+      let nat = measure(image(it.source, alt: "__cap__", width: size.width))
+      if nat.height > margen_img_alto {
+        image(it.source, alt: "__cap__", height: margen_img_alto)
+      } else { it }
+    })
+  }
+}
+
+// La numeracion de figuras y tablas la escribe pandoc-crossref en el texto del
+// pie; sin apagar la nativa de typst saldria dos veces. Va antes de todo para
+// alcanzar tambien el area de notas al pie (modo full).
+#set figure(numbering: none)
+// Pie de figura mas chico y alineado a la izquierda; el prefijo que escribe
+// crossref ("Figura 8.1:", "Tabla 3.2:") va en negrita.
+#show figure.caption: it => {
+  set align(left)
+  set text(size: 8.5pt)
+  show regex("^(Figura|Tabla|Cuadro)\s+[0-9.]+:"): strong
+  it
+}
+// Mas aire entre las figuras de la columna principal (cuerpo y `.wide`) y el
+// texto. En las figuras de margen se anula (tufte.lua fija un valor chico dentro
+// del `::: margin`) para no sumar al desborde vertical de las notas apiladas.
+#show figure: set block(above: 1.9em, below: 1.9em)
+
+// ---- Capitulos y partes -----------------------------------------------------
+// El nivel 1 es el capitulo: abre pagina, con el numero grande sobre el titulo.
+#set heading(numbering: "1.1.1")
+#show heading.where(level: 1): it => {
+  pagebreak(weak: true)
+  block(width: 100% + margen_der - margen_izq, above: 0pt, below: 2.2em)[
+    #if it.numbering != none [
+      #text(size: 52pt, fill: color_acento, weight: "bold")[#counter(heading).display("1")]
+      #v(-0.3em)
+    ]
+    #text(size: 20pt, weight: "bold")[#it.body]
+    #v(0.4em)
+    #line(length: 100%, stroke: 0.6pt + color_acento)
+  ]
+}
+#show heading.where(level: 2): it => {
+  v(1.1em, weak: true); text(size: 12pt, weight: "bold", it); v(0.7em, weak: true)
+}
+#show heading.where(level: 3): it => {
+  v(1em, weak: true); text(size: 11pt, weight: "bold", it); v(0.6em, weak: true)
+}
+
+// Las paginas sueltas (portada, indice, partes) usan margenes simetricos sobre el
+// ancho fisico: sin notas al margen no hay razon para la columna angosta, y un
+// bloque mas ancho que el area de texto descolgaria el centrado.
+// El margen se toma del interior, no del promedio con el margen de notas: con el
+// promedio la caja queda tan angosta que un titulo largo se parte con guion.
+#let margen_simetrico = (x: margen_izq * 1.6, y: 1in)
+
+// Pagina de parte: el filtro tufte-book.lua emite esto por cada `# X {.part}`.
+// No lleva pagebreak: `page()` ya abre pagina, y encadenar ambos deja una vacia.
+#let parte = counter("parte")
+#let part-page(body) = {
+  parte.step()
+  page(margin: margen_simetrico, header: none, footer: none)[
+    #set align(center + horizon)
+    #set par(justify: false)
+    #set text(hyphenate: false)
+    #text(size: 11pt, tracking: 3pt, fill: color_acento)[
+      #upper[$if(part-label)$$part-label$$else$Parte$endif$] #context parte.display("I")
+    ]
+    #v(0.6em)
+    #text(size: 26pt, weight: "bold")[#body]
+  ]
+}
+
+// ---- Portada e indice -------------------------------------------------------
+#page(margin: margen_simetrico, header: none, footer: none)[
+  // Las notas al margen las coloca drafting y necesita saber la geometria. Va
+  // dentro de la portada (asi no materializa una pagina en blanco suelto entre
+  // dos `#page()`), pero con `page-width` EXPLICITO: si no, drafting lo captura
+  // del contexto y aca es la portada con margenes simetricos, no el cuerpo, y las
+  // marginfigures se saldrian por el borde derecho.
+  #set-page-properties(
+    margin-right: margen_der - margen_izq,
+    margin-left: margen_izq * 1.2,
+    page-width: ancho_texto,
+  )
+  #set-margin-note-defaults(stroke: none, side: right)
+  #set align(center + horizon)
+  // Portada sin silabacion ni justificacion: el titulo no se parte con guion.
+  #set par(justify: false)
+  #set text(hyphenate: false)
+  $if(title-image)$
+  #image("$title-image$", width: 6cm)
+  #v(1.2em)
+  $endif$
+  #text(size: 30pt, weight: "bold")[$title$]
+  $if(subtitle)$
+  #v(0.5em)
+  #text(size: 15pt)[$subtitle$]
+  $endif$
+  #v(1.5em)
+  #line(length: 35%, stroke: 0.6pt + color_acento)
+  #v(1.5em)
+  $for(author)$
+  #text(size: 13pt)[$author$] \
+  $endfor$
+  $if(date)$
+  #v(0.8em)
+  #text(size: 11pt)[$date$]
+  $endif$
+]
+
+$if(toc)$
+#page(margin: margen_simetrico, header: none, footer: none)[
+  #text(size: 16pt, weight: "bold")[$if(toc-title)$$toc-title$$else$Contenidos$endif$]
+  #v(1em)
+  #outline(title: none, depth: $if(toc-depth)$$toc-depth$$else$2$endif$, indent: 1.2em)
+]
+$endif$
+
+#counter(page).update(1)
+
+$body$

@@ -1,0 +1,35 @@
+---
+title: "{{titulo}}"
+author:
+  - "{{autor}}"
+date: "{{fecha}}"
+abstract: |
+  Escribe aqui el resumen en un parrafo: problema general, brecha en la
+  literatura, contribucion de este trabajo ("Aqui presentamos..."),
+  hallazgos principales y conclusion directa.
+bibliography: references.bib
+csl: apa-6th-edition.csl
+
+# Tipografia. Sin estas claves queda la pila del paquete (IBM Plex Sans y
+# respaldos). El nombre es el que ve typst (revisar con `typst fonts`), no el de
+# fontconfig; aca van dos fuentes presentes en cualquier maquina.
+mainfont: "Liberation Serif"
+monofont: "Liberation Mono"
+fontsize: 10pt
+
+# Indice al inicio del documento.
+toc: false
+
+# full: true devuelve el documento a una columna ancha y manda las notas al pie
+# de la pagina en vez del margen. Util para una version de trabajo.
+full: false
+
+# Prefijos de pandoc-crossref en castellano: figureTitle/tableTitle encabezan el
+# pie ("Figura 1: ..."); figPrefix/tblPrefix son para las referencias sin
+# suprimir el prefijo.
+figureTitle: "Figura"
+tableTitle: "Tabla"
+figPrefix: "Figura"
+tblPrefix: "Tabla"
+eqnPrefix: "Ecuación"
+---
