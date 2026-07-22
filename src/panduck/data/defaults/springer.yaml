@@ -14,5 +14,6 @@ filters:
   # despues de citeproc; tipografia/alineacion/color por clases pfa-* (inyecta
   # ulem/varwidth en header-includes, que este template si renderiza)
   - fonts-and-alignment.lua
-  # corre despues de citeproc: inserta \section*{Funding} antes de las referencias
-  - insert-funding-before-refs.lua
+  # corre despues de citeproc: inserta las declaraciones de back-matter (Funding,
+  # Competing interests, Data availability) antes de las referencias
+  - insert-declarations-before-refs.lua

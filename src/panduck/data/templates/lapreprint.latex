@@ -108,6 +108,9 @@ $endif$$endif$$endfor$$endif$
 $if(keywords)$
 \metadata[]{Keywords}{$for(keywords)$$it$$sep$, $endfor$}
 $endif$
+$if(interests)$
+\metadata[]{Competing interests}{$interests$}
+$endif$
 $if(anonymous)$$else$$if(funding)$
 \metadata[]{Funding}{$for(funding)$$it$$sep$; $endfor$}
 $endif$$endif$

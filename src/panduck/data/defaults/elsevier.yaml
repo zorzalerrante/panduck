@@ -11,5 +11,6 @@ filters:
   # despues de strip-header-includes para que su inyeccion (ulem/varwidth, solo si
   # se usan esas clases) sobreviva; tipografia/alineacion/color por clases pfa-*
   - fonts-and-alignment.lua
-  # corre despues de citeproc: inserta \section*{Funding} antes de las referencias
-  - insert-funding-before-refs.lua
+  # corre despues de citeproc: inserta las declaraciones de back-matter (Funding,
+  # Competing interests, Data availability) antes de las referencias
+  - insert-declarations-before-refs.lua

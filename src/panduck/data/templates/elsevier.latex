@@ -2,6 +2,9 @@
 
 \usepackage{amsmath,amssymb}
 \usepackage[unicode=true]{hyperref} % provides \hypertarget
+% ORCID por autor (\orcidlink{id}): dibuja el logo con tikz, sin archivo externo.
+% Necesita hyperref, ya cargado arriba.
+\usepackage{orcidlink}
 \usepackage{graphicx}
 \makeatletter
 \def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
@@ -113,9 +116,9 @@ $endif$
 	$else$
 	$for(authors)$
 	$if(it.corresponding)$
-	\author[$it.affiliation_ids$]{$it.name$\corref{cor1}}
+	\author[$it.affiliation_ids$]{$it.name$$if(it.orcid)$~\orcidlink{$it.orcid$}$endif$\corref{cor1}}
 	$else$
-	\author[$it.affiliation_ids$]{$it.name$}
+	\author[$it.affiliation_ids$]{$it.name$$if(it.orcid)$~\orcidlink{$it.orcid$}$endif$}
 	$if(it.email)$\ead{$it.email$}$endif$
 	$endif$
 	$endfor$
@@ -150,6 +153,16 @@ $body$
 $if(funding)$
 \section*{Funding}
 This work was supported by $for(funding)$$it$$sep$; $endfor$.
+$endif$
+
+$if(interests)$
+\section*{Competing interests}
+$interests$
+$endif$
+
+$if(data)$
+\section*{Data availability}
+$data$
 $endif$
 
 $if(natbib)$

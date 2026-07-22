@@ -9,6 +9,11 @@
 \usepackage{amsmath,amssymb}
 \usepackage{xcolor}
 
+% ORCID por autor (\orcidlink{id}): el \orcid de la clase depende de un
+% Orcidlogo.eps ausente, asi que usamos el paquete orcidlink (dibuja el logo con
+% tikz, sin archivo externo). La clase ya carga hyperref, que orcidlink necesita.
+\usepackage{orcidlink}
+
 % Imagenes: graphicx y el ajuste a los margenes que espera la salida de pandoc.
 \usepackage{graphicx}
 \makeatletter
@@ -92,9 +97,9 @@ $if(anonymous)$
 $else$
 $for(authors)$
 $if(it.corresponding)$
-\author*[$it.affiliation_ids$]{$it.name$}$if(it.email)$\email{$it.email$}$endif$
+\author*[$it.affiliation_ids$]{$it.name$$if(it.orcid)$~\orcidlink{$it.orcid$}$endif$}$if(it.email)$\email{$it.email$}$endif$
 $else$
-\author[$it.affiliation_ids$]{$it.name$}$if(it.email)$\email{$it.email$}$endif$
+\author[$it.affiliation_ids$]{$it.name$$if(it.orcid)$~\orcidlink{$it.orcid$}$endif$}$if(it.email)$\email{$it.email$}$endif$
 $endif$
 $endfor$
 
@@ -122,6 +127,16 @@ $body$
 $if(funding)$
 \section*{Funding}
 This work was supported by $for(funding)$$it$$sep$; $endfor$.
+$endif$
+
+$if(interests)$
+\section*{Competing interests}
+$interests$
+$endif$
+
+$if(data)$
+\section*{Data availability}
+$data$
 $endif$
 
 $for(include-after)$
