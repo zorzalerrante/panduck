@@ -15,4 +15,4 @@ filters:
   - citeproc
   # despues de citeproc; tipografia/alineacion/color por clases pfa-*
   - fonts-and-alignment.lua
-  # nota: sin insert-funding-before-refs; el funding va al sidebar de metadata
+  # nota: sin insert-declarations-before-refs; funding/interests van al sidebar de metadata
