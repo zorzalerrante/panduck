@@ -14,6 +14,16 @@
 % tikz, sin archivo externo). La clase ya carga hyperref, que orcidlink necesita.
 \usepackage{orcidlink}
 
+% La clase sn-jnl (una columna) fija una caja de texto de 194.25mm sobre A4, lo
+% que deja ~77mm de margen inferior (su diseno de trim, mas corto que A4). Con
+% `balance-margins: true` en el head.yaml igualamos el margen inferior con el
+% superior (26mm) para una pagina balanceada. Es opt-in: por defecto se respeta
+% la maquetacion de la clase tal cual, porque hay revistas que esperan el
+% template as-is para la submission. La clase ya cargo el paquete geometry.
+$if(balance-margins)$
+\geometry{bottom=26mm}
+$endif$
+
 % Imagenes: graphicx y el ajuste a los margenes que espera la salida de pandoc.
 \usepackage{graphicx}
 \makeatletter

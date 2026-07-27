@@ -27,6 +27,11 @@ data: "Los datos que respaldan este trabajo estan disponibles en <https://exampl
 bibliography: references.bib
 csl: ieee.csl
 
+# La clase sn-jnl deja un margen inferior amplio (su diseno de trim sobre A4).
+# Descomenta para balancearlo con el margen superior en la previsualizacion.
+# Dejalo comentado para la submission: la revista espera el template as-is.
+# balance-margins: true
+
 # Referencias cruzadas: el texto escribe "Figura"/"Tabla" a mano, la cita va
 # con prefijo suprimido ([-@fig:x]).
 figPrefix: "Figura"
