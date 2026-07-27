@@ -84,7 +84,9 @@
   size: $if(fontsize)$$fontsize$$else$22pt$endif$,
   fill: mdark,
 )
-#set par(justify: false, leading: 0.7em)
+// `spacing` explicito: el default de typst (1.2em) deja un hueco de casi una
+// linea extra bajo la regla del titulo, porque se suma al `v()` de la cabecera.
+#set par(justify: false, leading: 0.7em, spacing: 0.85em)
 // Matematica sans y upright por omision: el cuerpo de las slides es sans, asi que
 // el default de typst (New Computer Modern Math, serif e italica) desentona.
 // `mathfont` (default Fira Math, vendorizada en panduck/data/fonts) le da una sans
@@ -180,7 +182,7 @@
       text(size: 26pt, weight: "medium", fill: if dark-bg { white } else { mdark })[#title]
       v(0.2em)
       line(length: 100%, stroke: 1.2pt + (if dark-bg { white } else { mdark }))
-      v(0.7em)
+      v(0.15em)
     }
     #if full or centered {
       align(center + horizon)[#body]
