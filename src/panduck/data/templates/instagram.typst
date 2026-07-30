@@ -29,10 +29,68 @@
 // span .sff/.sans -> fuente secundaria configurable
 #let sff(body) = text(font: _sansfont, body)
 
+// Fila de imagenes (::: row del markdown, que el filtro traduce a esta llamada).
+// Cada pieza es (path, circle, factor), donde factor viene del width/height en %
+// que lleve la imagen. Con `height` todas las piezas se igualan a esa altura y
+// factor la escala; sin `height` las columnas reparten el ancho (factor fija el
+// ancho de esa columna). Un gap negativo las traslapa, y como el stack dibuja en
+// orden, cada imagen queda sobre la anterior.
+#let _row-piece-h(p, h) = {
+  let alto = if p.factor == none { h } else { h * p.factor }
+  if p.circle {
+    box(clip: true, radius: 50%, width: alto, height: alto,
+        image(p.path, width: 100%, height: 100%, fit: "cover"))
+  } else {
+    box(image(p.path, height: alto))
+  }
+}
+
+#let _row-piece-w(p) = if p.circle {
+  layout(s => box(clip: true, radius: 50%, width: s.width, height: s.width,
+                  image(p.path, width: 100%, height: 100%, fit: "cover")))
+} else {
+  image(p.path, width: 100%)
+}
+
+#let row(gap: 0.4em, height: none, width: 100%, ..pieces) = {
+  let ps = pieces.pos()
+  align(center, block(width: width, if height != none {
+    stack(dir: ltr, spacing: gap,
+      ..ps.map(p => box(height: height, align(horizon, _row-piece-h(p, height)))))
+  } else {
+    grid(columns: ps.map(p => if p.factor == none { 1fr } else { p.factor * 100% }),
+      column-gutter: gap, align: bottom + center, ..ps.map(_row-piece-w))
+  }))
+}
+
 #let blockquote(body) = block(inset: (left: 1.5em))[#body]
 #let horizontalrule = align(center)[#v(0.3em) #text(size: 1.3em)[\u{2042}] #v(0.3em)]
 #let endnote(num, contents) = stack(dir: ltr, spacing: 3pt, super[#num], contents)
 #show terms: it => it.children.map(c => [#strong[#c.term] #block(inset: (left: 1.5em))[#c.description]]).join()
+
+// Franja i de una imagen ancha repartida entre n posts (carrusel continuo): la
+// imagen se dibuja del porte de las n paginas juntas, corrida i paginas hacia la
+// izquierda y recortada al borde. Al deslizar en Instagram, las franjas se leen
+// como una sola foto.
+//
+// La foto casi nunca viene en la proporcion exacta de la tira (n * ancho x alto),
+// asi que la escala y el encuadre se calculan a mano en vez de dejarselos a
+// `fit: "cover"`: se escala hasta cubrir la tira por el lado que falte y el
+// sobrante se reparte segun x e y (0% arriba/izquierda, 50% centrado, 100%
+// abajo/derecha). Ese encuadre es el mismo para las n franjas, si no la costura
+// entre posts no calza.
+#let _panorama(path, n, i, x: 50%, y: 50%) = layout(sz => context {
+  let tira = n * sz.width
+  let natural = measure(image(path))
+  let escala = calc.max(tira / natural.width, sz.height / natural.height)
+  let ancho = natural.width * escala
+  let alto = natural.height * escala
+  box(width: 100%, height: 100%, clip: true, place(
+    dx: (tira - ancho) * x - i * sz.width,
+    dy: (sz.height - alto) * y,
+    image(path, width: ancho, height: alto),
+  ))
+})
 
 // Un post = una pagina. pagecolor pinta el fondo; image-path lo cubre (fit cover).
 // textcolor ya viene resuelto por el filtro. flush-top desactiva el centrado
@@ -41,17 +99,27 @@
 #let post(
   pagecolor: none,
   image-path: none,
+  panorama-path: none,
+  panorama-n: 1,
+  panorama-i: 0,
+  panorama-x: 50%,
+  panorama-y: 50%,
   textcolor: rgb("#2d2d2d"),
   fontsize: none,
   flush-top: false,
   flush-left: false,
+  show-footer: true,
   body,
 ) = {
   page(
     width: _w, height: _h, margin: _margin,
     fill: if pagecolor != none { pagecolor } else { white },
-    background: if image-path != none { image(image-path, width: 100%, height: 100%, fit: "cover") },
-    footer: if _footer != [] or _slidenum {
+    background: if panorama-path != none {
+      _panorama(panorama-path, panorama-n, panorama-i, x: panorama-x, y: panorama-y)
+    } else if image-path != none {
+      image(image-path, width: 100%, height: 100%, fit: "cover")
+    },
+    footer: if show-footer and (_footer != [] or _slidenum) {
       context {
         set text(size: 0.72em, fill: textcolor)
         let num = if _slidenum {

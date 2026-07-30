@@ -34,6 +34,33 @@ La columna derecha lleva otro bloque de texto, alineado con la primera.
 
 :::
 
+# {.top pagecolor="f4efe6" fontsize="11pt"}
+
+[Filas de imagenes]{.large .smallcaps}
+
+Con `height` las piezas quedan a la misma altura; un `gap` negativo las traslapa.
+
+::: {.row height="2.4cm" gap="-0.8cm"}
+![](avatar.png){.circle height="80%"}
+![](bg.png)
+:::
+
+Sin `height`, las columnas reparten el ancho.
+
+::: {.row gap="0.2cm"}
+![](avatar.png)
+![](bg.png)
+![](avatar.png)
+:::
+
+# {.nofooter panorama="bg.png"}
+
+[Carrusel continuo]{.large .smallcaps}
+
+Esta foto se reparte entre dos posts y se lee como una sola al deslizar.
+
+# {.nofooter panorama="bg.png"}
+
 # {background-image="bg.png"}
 
 [**¡Disponible ahora!**]{.LARGE}
