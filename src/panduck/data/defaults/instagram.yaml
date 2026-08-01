@@ -13,6 +13,10 @@ filters:
   # estilos inline (tamano/versalitas/peso/familia/color) por clases pfa-*; corre
   # ANTES de la particion para ver los Span/Div antes de envolverlos en #post[]
   - fonts-and-alignment.lua
+  # rescata el LaTeX crudo que el writer typst descarta sin avisar (\clearpage,
+  # \begin{align*}, \mbox...) y avisa por stderr de lo que no pudo traducir. Va
+  # antes de typst-fix-symbols, que trabaja sobre los Math que este recupera
+  - typst-raw-latex.lua
   # arregla simbolos math que el writer typst emite con nombres viejos (\langle,
   # \cap, \lceil...); antes de la particion, que serializa el contenido a typst
   - typst-fix-symbols.lua

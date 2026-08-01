@@ -18,6 +18,10 @@ filters:
   - citeproc
   # post-citeproc: aplana los Cite para que el writer de typst no emita #cite
   - typst-flatten-cites.lua
+  # rescata el LaTeX crudo que el writer typst descarta sin avisar (\clearpage,
+  # \begin{align*}, \mbox...) y avisa por stderr de lo que no pudo traducir. Va
+  # antes de typst-fix-symbols, que trabaja sobre los Math que este recupera
+  - typst-raw-latex.lua
   # arregla simbolos math que el writer typst emite con nombres viejos (\langle,
   # \cap, \lceil...) y que typst 0.15 ya no reconoce
   - typst-fix-symbols.lua

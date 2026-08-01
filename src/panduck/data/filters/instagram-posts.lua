@@ -293,20 +293,12 @@ function Image(el)
   return pandoc.RawInline("typst", '#align(center)[#image("' .. src .. '"' .. optstr .. ')]')
 end
 
--- \mbox{...} de LaTeX (evita el corte de linea) -> #box[...] de typst, asi el
--- markdown de trazos se reusa sin reescribir. Otro LaTeX crudo lo descarta el
--- writer typst.
-function RawInline(el)
-  if el.format ~= "tex" and el.format ~= "latex" then return nil end
-  local inner = el.text:match("^\\mbox%s*{(.*)}$")
-  if inner then return pandoc.RawInline("typst", "#box[" .. inner .. "]") end
-  return nil
-end
-
 -- Los estilos inline de texto (tamano .small/.large/.LARGE/..., versalitas
 -- .sc/.smallcaps, .sff/.sans, pesos, color) los maneja el filtro compartido
--- fonts-and-alignment (corre antes en el pipeline). Aqui solo queda lo propio de
--- los posts: imagenes, columnas, \mbox, particion y footer.
+-- fonts-and-alignment, y el LaTeX crudo de prosa (\mbox{...} del markdown viejo
+-- de trazos, que evita el corte de linea) el filtro compartido typst-raw-latex.
+-- Los dos corren antes en el pipeline. Aqui solo queda lo propio de los posts:
+-- imagenes, columnas, filas, particion y footer.
 
 -- ---- Particion en posts (corre despues de las traducciones) -----------------
 
@@ -384,5 +376,5 @@ end
 -- piezas ya serian typst crudo.
 return {
   { Div = row_div },
-  { Div = Div, Image = Image, RawInline = RawInline, Pandoc = Pandoc },
+  { Div = Div, Image = Image, Pandoc = Pandoc },
 }
