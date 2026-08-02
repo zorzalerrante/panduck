@@ -53,6 +53,13 @@ Sin `height`, las columnas reparten el ancho.
 ![](avatar.png)
 :::
 
+# {.right .bottom header="Serie de lectura" fontsize="12pt"}
+
+[Alineacion en dos ejes]{.large .smallcaps}
+
+Este post va abajo a la derecha y trae cabecera propia. Los ejes se combinan:
+`.left`, `.center` o `.right` con `.top`, `.middle` o `.bottom`.
+
 # {.nofooter panorama="bg.png"}
 
 [Carrusel continuo]{.large .smallcaps}

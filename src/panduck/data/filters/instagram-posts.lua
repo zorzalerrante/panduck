@@ -170,6 +170,21 @@ local function pct(s, default)
   return v and tonumber(v) / 100 or default
 end
 
+-- Alineacion del contenido del post, dos ejes independientes. Los defaults
+-- (centrado horizontal, al medio vertical) no se emiten.
+local HALIGN = { "left", "center", "right" }
+local VALIGN = { "top", "middle", "bottom" }
+
+local function primera_clase(attr, opciones)
+  for _, nombre in ipairs(opciones) do
+    if attr and attr.classes:includes(nombre) then return nombre end
+  end
+end
+
+local function tiene_alguna(attr, nombres)
+  return primera_clase(attr, nombres) ~= nil
+end
+
 -- span: (path, n, i) cuando el post es una franja de un panorama (ver Pandoc)
 local function post_opts(attr, span)
   local pagecolor = (attr and attr.attributes["pagecolor"]) or meta.pagecolor
@@ -199,16 +214,25 @@ local function post_opts(attr, span)
     o[#o + 1] = 'image-path: "' .. image .. '"'
   end
   o[#o + 1] = "textcolor: " .. rgb_lit(resolved)
-  if attr and attr.attributes["fontsize"] then
-    o[#o + 1] = "fontsize: " .. attr.attributes["fontsize"]
+  for _, k in ipairs({ "fontsize", "leading", "margin" }) do
+    if attr and attr.attributes[k] then o[#o + 1] = k .. ": " .. attr.attributes[k] end
   end
-  if attr and attr.classes:includes("top") then o[#o + 1] = "flush-top: true" end
-  if attr and attr.classes:includes("left") then o[#o + 1] = "flush-left: true" end
+  -- alineacion en dos ejes; el default (centrado, al medio) no se emite
+  local h = primera_clase(attr, HALIGN)
+  local v = primera_clase(attr, VALIGN)
+  if h then o[#o + 1] = 'halign: "' .. h .. '"' end
+  if v then o[#o + 1] = 'valign: "' .. v .. '"' end
+  -- cabecera y pie propios de este post (el texto pasa por los shortcodes)
+  for _, k in ipairs({ "header", "footer" }) do
+    if attr and attr.attributes[k] then
+      o[#o + 1] = k .. ": [" .. footer_to_typst(attr.attributes[k]) .. "]"
+    end
+  end
   -- sin pie: el caso tipico es una franja de panorama, donde la marca y el
   -- numero cortan la foto
-  if attr and (attr.classes:includes("nofooter") or attr.classes:includes("sin-pie")) then
-    o[#o + 1] = "show-footer: false"
-  end
+  if tiene_alguna(attr, { "noheader", "sin-cabecera" }) then o[#o + 1] = "show-header: false" end
+  if tiene_alguna(attr, { "nofooter", "sin-pie" }) then o[#o + 1] = "show-footer: false" end
+  if tiene_alguna(attr, { "nonumber", "sin-numero" }) then o[#o + 1] = "show-number: false" end
   return table.concat(o, ", ")
 end
 
@@ -309,11 +333,13 @@ function Pandoc(doc)
   meta.w = (doc.meta.width and to_cm(utils.stringify(doc.meta.width))) or meta.w
   meta.h = (doc.meta.height and to_cm(utils.stringify(doc.meta.height))) or meta.h
 
-  -- footer: resuelve shortcodes de iconos a typst crudo
-  if doc.meta.footer then
-    doc.meta.footer = pandoc.MetaInlines({
-      pandoc.RawInline("typst", footer_to_typst(utils.stringify(doc.meta.footer))),
-    })
+  -- cabecera y pie: resuelven shortcodes de iconos a typst crudo
+  for _, k in ipairs({ "header", "footer" }) do
+    if doc.meta[k] then
+      doc.meta[k] = pandoc.MetaInlines({
+        pandoc.RawInline("typst", footer_to_typst(utils.stringify(doc.meta[k]))),
+      })
+    end
   end
 
   -- 1) juntar los bloques de cada post
@@ -360,10 +386,15 @@ function Pandoc(doc)
     end
   end
 
-  -- 3) emitir
+  -- 3) emitir. Cada post deja una marca invisible con su numero y la pagina
+  -- donde empieza; `panduck build` la lee con `typst query` para avisar de los
+  -- posts que no cupieron (typst los parte en dos paginas sin decir nada).
   local out = {}
   for j, p in ipairs(posts) do
     out[#out + 1] = pandoc.RawBlock("typst", "#post(" .. post_opts(p.attr, spans[j]) .. ")[")
+    out[#out + 1] = pandoc.RawBlock("typst",
+      "#context [#metadata((n: " .. j .. ", p: counter(page).get().first(), " ..
+      "t: counter(page).final().first()))<panduck-page>]")
     for _, b in ipairs(p.blocks) do out[#out + 1] = b end
     out[#out + 1] = pandoc.RawBlock("typst", "]")
   end

@@ -6,6 +6,7 @@ data/defaults/, los assets en data/templates|csl|filters|texmf.
 """
 
 import argparse
+import json
 import os
 import re
 import shutil
@@ -139,6 +140,45 @@ def base_command(args, extra):
     return cmd, sources
 
 
+def avisa_desborde(typ, typst_args):
+    """Avisa de los posts que no cupieron en su pagina.
+
+    Un post (o una slide) es una pagina: si el contenido no cabe, typst lo parte
+    en dos y compila igual, sin decir nada, asi que la unica senal era contar los
+    PNG a mano. Los filtros que parten el documento en paginas dejan una marca
+    invisible (`<panduck-page>`) con el numero de post, la pagina donde empieza y
+    el total; con eso se calcula cuantas paginas ocupo cada uno. Documentos sin
+    esa marca no producen ningun aviso.
+    """
+    intentos = [
+        [typst_bin(), "eval", "query(<panduck-page>).map(it => it.value)",
+         "--in", typ, *typst_args, "--format", "json"],
+        # typst < 0.15 no tiene `eval`; `query` hace lo mismo y quedo deprecado en 0.15
+        [typst_bin(), "query", *typst_args, typ, "<panduck-page>",
+         "--field", "value", "--format", "json"],
+    ]
+    marcas = []
+    for cmd in intentos:
+        try:
+            marcas = json.loads(subprocess.run(
+                cmd, capture_output=True, text=True, check=True).stdout)
+            break
+        except Exception:
+            continue  # el aviso es opcional: si no se puede leer, no se falla
+    if not marcas:
+        return
+    marcas.sort(key=lambda m: m["n"])
+    largos = []
+    for i, m in enumerate(marcas):
+        fin = marcas[i + 1]["p"] if i + 1 < len(marcas) else m["t"] + 1
+        if fin - m["p"] > 1:
+            largos.append(f"#{m['n']} ({fin - m['p']} paginas)")
+    if largos:
+        print(f"[panduck] aviso: {len(largos)} de {len(marcas)} no caben en su pagina y "
+              f"typst los partio: {', '.join(largos)}. Baja su fontsize, sube el margen "
+              f"o acorta el contenido.", file=sys.stderr)
+
+
 def output_name(sources, ext):
     stem = next(s.stem for s in sources if s.suffix == ".md")
     return f"{stem}.{ext}"
@@ -156,6 +196,7 @@ def cmd_build(args, extra):
         out = args.output or f"{stem}.pdf"
         run([typst_bin(), "compile", *typst_args, typ, out])
         print(f"[panduck] listo: {out}")
+        avisa_desborde(typ, typst_args)
         # exportacion a PNG (una imagen por pagina). Algunos perfiles (instagram)
         # la piden por defecto via `# panduck-png: N`; --png/--no-png la fuerzan.
         default_dpi = profile_png_dpi(args.profile)

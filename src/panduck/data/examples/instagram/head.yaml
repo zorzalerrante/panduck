@@ -19,6 +19,16 @@ pagecolor: "f4efe6"
 # background-image: bg.png
 # Pie comun a todos los posts. Acepta iconos FontAwesome como shortcodes
 # (:instagram: :globe: :envelope: :twitter: :youtube: ...). El numero de post
-# (n / total) se agrega a la derecha; se apaga con `no-slide-number: true`.
+# (n / total) se agrega al borde contrario de la marca; se apaga con
+# `no-slide-number: true`, o post a post con la clase .nonumber.
 footer: "{{footer}}"
+# Cabecera comun (mismo formato que el pie). Cada post puede poner la suya con
+# `# {header="..."}` o sacarla con .noheader; lo mismo para el pie.
+# header: "Serie de lectura"
+# Donde va la marca en cada franja: left, center (defecto) o right.
+# header-align: "center"
+# footer-align: "center"
+# Interlineado del cuerpo; se aprieta para posts con mucho texto (tambien post a
+# post con `# {leading="0.55em"}`).
+# leading: 0.7em
 ---
