@@ -7,6 +7,10 @@ wrap: none  # no envolver la salida: un font-name largo partido en 2 lineas romp
 standalone: true
 template: slides
 filters:
+  # diagramas de graphviz escritos en el documento (```{.dot}); el formato de la
+  # imagen sale del writer (svg en typst, pdf en latex). Va primero: la figura
+  # que produce tiene que existir antes de crossref y de fonts-and-alignment
+  - graphviz.lua
   - citeproc
   # post-citeproc: aplana los Cite para que el writer de typst no emita #cite
   - typst-flatten-cites.lua

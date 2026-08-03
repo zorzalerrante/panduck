@@ -12,6 +12,10 @@ filters:
   # el directorio del documento traiga su propio panduck-pre.lua, que gana por
   # la resolucion por nombre de pandoc (cwd antes que data-dir)
   - panduck-pre.lua
+  # diagramas de graphviz escritos en el documento (```{.dot}); el formato de la
+  # imagen sale del writer (svg en typst, pdf en latex). Va primero: la figura
+  # que produce tiene que existir antes de crossref y de fonts-and-alignment
+  - graphviz.lua
   # numeracion y referencias cruzadas de figuras, tablas y ecuaciones. La
   # plantilla apaga la numeracion nativa de typst para que no salga duplicada.
   - pandoc-crossref

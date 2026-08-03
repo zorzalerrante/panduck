@@ -122,17 +122,8 @@ function Div(el)
   return out
 end
 
--- Graphviz: ```{.dot} o ```{.graphviz} -> dot -Tsvg -> #image
-function CodeBlock(el)
-  if not (el.classes:includes("dot") or el.classes:includes("graphviz")) then return nil end
-  local svg = pandoc.pipe("dot", { "-Tsvg" }, el.text)
-  local name = "_dot_" .. utils.sha1(el.text):sub(1, 8) .. ".svg"
-  local fh = io.open(name, "wb")
-  fh:write(svg)
-  fh:close()
-  local w = el.attributes["width"] or "80%"
-  return pandoc.RawBlock("typst", '#align(center)[#image("' .. name .. '", width: ' .. w .. ')]')
-end
+-- Los diagramas de graphviz (```{.dot}) los convierte el filtro compartido
+-- graphviz.lua, que corre antes en el pipeline y sirve para todos los perfiles.
 
 -- Particion en slides (corre despues de transformar columnas y diagramas)
 function Pandoc(doc)

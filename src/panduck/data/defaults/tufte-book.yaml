@@ -12,6 +12,10 @@ filters:
   # enganche para adaptar el documento antes de todo lo demas: no-op salvo que
   # el directorio del documento traiga su propio panduck-pre.lua
   - panduck-pre.lua
+  # diagramas de graphviz escritos en el documento (```{.dot}); el formato de la
+  # imagen sale del writer (svg en typst, pdf en latex). Va primero: la figura
+  # que produce tiene que existir antes de crossref y de fonts-and-alignment
+  - graphviz.lua
   # paginas de parte (encabezados de nivel 1 con clase .part). Va ANTES de
   # crossref: si no, crossref cuenta cada parte como un capitulo mas y la
   # numeracion por capitulo queda corrida (Figura 2.1 en el capitulo 1).

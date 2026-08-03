@@ -4,6 +4,10 @@ pdf-engine: xelatex
 template: elsevier
 filters:
   # los filtros lua se resuelven desde <data-dir>/filters
+  # diagramas de graphviz escritos en el documento (```{.dot}); el formato de la
+  # imagen sale del writer (svg en typst, pdf en latex). Va primero: la figura
+  # que produce tiene que existir antes de crossref y de fonts-and-alignment
+  - graphviz.lua
   - strip-header-includes.lua
   - process-affiliations.lua
   - pandoc-crossref

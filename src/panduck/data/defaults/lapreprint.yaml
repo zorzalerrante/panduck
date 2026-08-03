@@ -8,6 +8,10 @@ metadata:
   affiliation-id-prefix: ""
 filters:
   # los filtros lua se resuelven desde <data-dir>/filters
+  # diagramas de graphviz escritos en el documento (```{.dot}); el formato de la
+  # imagen sale del writer (svg en typst, pdf en latex). Va primero: la figura
+  # que produce tiene que existir antes de crossref y de fonts-and-alignment
+  - graphviz.lua
   - process-affiliations.lua
   # deriva leadauthor (apellido del primer autor) y shorttitle para el header
   - lapreprint-meta.lua

@@ -2,6 +2,10 @@ from: markdown+smart+citations
 standalone: true
 pdf-engine: xelatex
 filters:
+  # diagramas de graphviz escritos en el documento (```{.dot}); el formato de la
+  # imagen sale del writer (svg en typst, pdf en latex). Va primero: la figura
+  # que produce tiene que existir antes de crossref y de fonts-and-alignment
+  - graphviz.lua
   - pandoc-crossref
   - citeproc
   # tipografia/alineacion/color por clases CSS-like (pfa-*, ver fonts-and-alignment)
