@@ -1,0 +1,98 @@
+// Documento base de panduck en typst: reporte o articulo de una columna, sin
+// LaTeX de por medio (compila en menos de un segundo y no necesita una
+// instalacion de TeX). Es el equivalente typst del perfil `default`; el mismo
+// markdown compila en los dos, porque la numeracion de figuras, tablas y
+// ecuaciones la pone pandoc-crossref y no typst.
+//
+// Reemplaza la plantilla typst por defecto de pandoc, asi que reincluye a mano
+// las definiciones que el writer presupone (horizontalrule, terms, table).
+
+#let _paper = "$if(papersize)$$papersize$$else$a4$endif$"
+#let _margin = $if(margin)$$margin$$else$2.5cm$endif$
+#let _fontsize = $if(fontsize)$$fontsize$$else$11pt$endif$
+#let _leading = $if(leading)$$leading$$else$0.65em$endif$
+#let _lang = "$if(lang)$$lang$$else$es$endif$"
+// Las fuentes van por su nombre de familia tipografica (el que ve `typst
+// fonts`). Sin mainfont queda la serif por defecto de typst.
+#let _sansfont = $if(sansfont)$"$sansfont$"$else$"DejaVu Sans"$endif$
+#let _monofont = $if(monofont)$"$monofont$"$else$"DejaVu Sans Mono"$endif$
+#let _numsec = $if(numbersections)$"1.1.1"$else$none$endif$
+
+#set page(paper: _paper, margin: _margin, numbering: "1")
+#set text($if(mainfont)$font: ("$mainfont$",), $endif$size: _fontsize, lang: _lang)
+#set par(justify: true, leading: _leading)
+#set heading(numbering: _numsec)
+#show heading: set block(above: 1.4em, below: 0.8em)
+#show heading: set text(hyphenate: false)
+$if(colorlinks)$
+#show link: set text(fill: rgb("#1a4b8c"))
+$endif$
+
+// Numeracion apagada a proposito: la pone pandoc-crossref al escribir el pie
+// ("Figura 1: ..."), como en los perfiles LaTeX. Si typst tambien numerara
+// saldria dos veces.
+#set figure(numbering: none)
+#set math.equation(numbering: none)
+#show figure.caption: set align(left)
+#show figure.caption: set text(size: 0.92em)
+#show figure.caption: it => {
+  show regex("^(Figura|Tabla|Cuadro|Figure|Table)\s+[0-9.]+:"): strong
+  it
+}
+#show figure: set block(above: 1.5em, below: 1.5em)
+
+#show raw: set text(font: _monofont, size: 0.92em)
+#show raw.where(block: true): it => block(
+  width: 100%, fill: luma(96%), inset: 8pt, radius: 3pt, it)
+$if(mathfont)$
+#show math.equation: set text(font: ("$mathfont$",))
+$endif$
+$if(math-scale)$
+#show math.equation: set text(size: $math-scale$ * 1em)
+$endif$
+
+// Definiciones que presupone el writer typst de pandoc
+#let horizontalrule = line(start: (25%, 0%), end: (75%, 0%))
+#let blockquote(body) = block(inset: (left: 1.5em), body)
+#let endnote(num, contents) = stack(dir: ltr, spacing: 3pt, super[#num], contents)
+#show terms: it => it.children.map(c => [#strong[#c.term] #block(inset: (left: 1.5em))[#c.description]]).join()
+#set table(inset: 6pt, stroke: none)
+#show table.cell.where(y: 0): strong
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+// Portada: titulo, subtitulo, autores, fecha y resumen. Todo en la primera
+// pagina, sin pagina aparte, que es lo habitual en un reporte.
+#align(center)[
+  #block(text(size: 1.7em, weight: "bold", hyphenate: false)[$title$])
+$if(subtitle)$
+  #block(above: 0.6em, text(size: 1.15em)[$subtitle$])
+$endif$
+$if(author)$
+  #block(above: 1.1em, text(size: 1.05em)[$for(author)$$author$$sep$ · $endfor$])
+$endif$
+$if(date)$
+  #block(above: 0.5em, text(size: 0.95em)[$date$])
+$endif$
+]
+
+$if(abstract)$
+#block(width: 100%, inset: (x: 1.5em), above: 1.6em, below: 1.4em)[
+  #text(size: 0.95em)[
+    #text(weight: "bold")[$if(abstract-title)$$abstract-title$$else$Resumen$endif$.]
+    $abstract$
+  ]
+]
+$endif$
+$if(keywords)$
+#block(inset: (x: 1.5em), below: 1.4em)[
+  #text(size: 0.9em)[#text(weight: "bold")[Palabras clave.] $for(keywords)$$keywords$$sep$, $endfor$]
+]
+$endif$
+$if(toc)$
+#outline(title: [$if(toc-title)$$toc-title$$else$Contenidos$endif$], depth: $toc-depth$)
+#v(1em)
+$endif$
+
+$body$

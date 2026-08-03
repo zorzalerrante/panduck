@@ -1,0 +1,30 @@
+# Documento base en typst: reporte o articulo de una columna, sin LaTeX. Es el
+# equivalente typst del perfil `default` y el mismo markdown compila en los dos,
+# porque la numeracion de figuras, tablas y ecuaciones la pone pandoc-crossref.
+# Compila en menos de un segundo y no necesita una instalacion de TeX. panduck
+# genera el .typ con pandoc y luego corre `typst compile` (ver cli.py).
+# Solo PDF: pandoc no lee typst, asi que para docx hay que usar `default`.
+from: markdown+smart+citations
+to: typst
+wrap: none  # no envolver: un nombre de fuente largo partido en 2 lineas rompe el string typst
+standalone: true
+template: documento
+filters:
+  # diagramas de graphviz escritos en el documento (```{.dot}); el formato de la
+  # imagen sale del writer (svg en typst, pdf en latex). Va primero: la figura
+  # que produce tiene que existir antes de crossref y de fonts-and-alignment
+  - graphviz.lua
+  # numeracion y referencias cruzadas de figuras, tablas y ecuaciones. La
+  # plantilla apaga la numeracion nativa de typst para que no salga duplicada.
+  - pandoc-crossref
+  - citeproc
+  # post-citeproc: aplana los Cite para que el writer de typst no emita #cite
+  - typst-flatten-cites.lua
+  # rescata el LaTeX crudo que el writer typst descarta sin avisar (\clearpage,
+  # \begin{align*}, \mbox...) y avisa por stderr de lo que no pudo traducir
+  - typst-raw-latex.lua
+  # arregla simbolos math que el writer typst emite con nombres viejos (\langle,
+  # \cap, \lceil...) y que typst 0.15 ya no reconoce
+  - typst-fix-symbols.lua
+  # estilos inline (tamano/versalitas/peso/familia/color) por clases pfa-*
+  - fonts-and-alignment.lua

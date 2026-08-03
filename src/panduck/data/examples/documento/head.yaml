@@ -1,0 +1,42 @@
+---
+title: "{{titulo}}"
+subtitle: ""
+author:
+  - "{{autor}}"
+date: "{{fecha}}"
+abstract: |
+  Escribe aqui el resumen en un parrafo: problema general, brecha en la
+  literatura, contribucion de este trabajo ("Aqui presentamos..."),
+  hallazgos principales y conclusion directa.
+keywords: [primera, segunda]
+bibliography: references.bib
+csl: apa-6th-edition.csl
+
+# Indice y numeracion de secciones.
+toc: true
+toc-depth: 2
+numbersections: true
+# Enlaces en azul (sin esto salen del color del texto).
+colorlinks: true
+
+# Pagina y tipografia. Sin mainfont queda la serif por defecto de typst. El
+# nombre es el que ve typst (revisar con `typst fonts`), no el de fontconfig.
+papersize: a4
+margin: 2.5cm
+fontsize: 11pt
+# mainfont: "Liberation Serif"
+# monofont: "Liberation Mono"
+# Fuente de la matematica (necesita tabla MATH de OpenType, p. ej. "Fira Math"
+# o "New Computer Modern Math") y su escala respecto al cuerpo.
+# mathfont: "New Computer Modern Math"
+# math-scale: 1
+
+# Prefijos de pandoc-crossref en castellano: figureTitle/tableTitle encabezan el
+# pie ("Figura 1: ..."); figPrefix/tblPrefix son para las referencias sin
+# suprimir el prefijo.
+figureTitle: "Figura"
+tableTitle: "Tabla"
+figPrefix: "Figura"
+tblPrefix: "Tabla"
+eqnPrefix: "Ecuación"
+---
