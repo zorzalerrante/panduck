@@ -6,6 +6,14 @@ to: typst
 wrap: none  # no envolver la salida: un font-name largo partido en 2 lineas rompe el string typst
 standalone: true
 template: slides
+metadata:
+  # paleta de los diagramas .dot: el tema de las slides vive hardcodeado en
+  # slides.typst (el escape de `#` rompe la interpolacion de variables), asi que
+  # el filtro lo selecciona por nombre. Aca va el nombre y no los colores porque
+  # el `metadata:` de un defaults gana sobre el head y el documento no podria
+  # cambiarlos; los colores sueltos (dot-fg, dot-bg, dot-accent) si se ponen en
+  # el head y tienen prioridad sobre el tema.
+  dot-theme: slides
 filters:
   # diagramas de graphviz escritos en el documento (```{.dot}); el formato de la
   # imagen sale del writer (svg en typst, pdf en latex). Va primero: la figura

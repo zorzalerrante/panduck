@@ -19,13 +19,21 @@ compilar, sin archivos `.dot` sueltos ni reglas en el Makefile:
 ```{#fig:flujo .dot caption="Las tres etapas del procesamiento" width="55%"}
 digraph {
   rankdir=LR;
-  node [shape=box, style=rounded];
+  node [shape=box, style="filled,rounded"];
   Datos -> Modelo -> Resultado;
+  Modelo [class="strong"];
+  Resultado [class="accent"];
 }
 ```
 
 La Figura [-@fig:flujo] resume el flujo. Sin `caption` el diagrama sale centrado
 y sin numero, y con `engine="neato"` se cambia el motor de dibujo.
+
+Los nodos toman la tipografia y los colores del documento sin declararlos. Con
+`class="strong"` el nodo se rellena con el color del texto y con `class="accent"`
+con el color destacado; en los dos casos el color de la letra se elige por
+contraste. La paleta se cambia con `dot-fg`, `dot-bg` y `dot-accent` en el
+`head.yaml`.
 
 | Modelo                | Predictores | RMSE |
 |:----------------------|------------:|-----:|

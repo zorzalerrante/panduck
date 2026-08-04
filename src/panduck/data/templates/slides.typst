@@ -62,6 +62,12 @@
   #body
 ]
 
+// El writer de typst dejo de emitir `#blockquote[...]` y ahora emite el elemento
+// nativo `#quote(block: true)[...]`, que no pasaba por la definicion de arriba y
+// se quedaba con la tipografia principal. El show rule lo reencamina, asi que
+// quotefont vuelve a aplicarse a los parrafos con `>`.
+#show quote.where(block: true): it => blockquote(it.body)
+
 #set page(
   paper: "presentation-16-9",
   margin: base-margin,
@@ -79,9 +85,13 @@
     place(bottom, line(length: (cur / total) * 100%, stroke: 2pt + accent))
   },
 )
+// Tamano de texto del deck: el resto de los tamanos se deriva de este, asi que
+// `fontsize` en el head.yaml los escala a todos (titulos de slide, texto
+// reducido de {.smaller} y {.image}, pies de figura) y no solo al cuerpo.
+#let base_size = $if(fontsize)$$fontsize$$else$22pt$endif$
 #set text(
   font: (mainfont_name,),
-  size: $if(fontsize)$$fontsize$$else$22pt$endif$,
+  size: base_size,
   fill: mdark,
 )
 // `spacing` explicito: el default de typst (1.2em) deja un hueco de casi una
@@ -97,14 +107,23 @@
 #show heading: set text(fill: mdark)
 #set list(marker: box(width: 0.42em, height: 0.42em, fill: accent, baseline: -0.1em), spacing: 0.9em)
 #set enum(spacing: 0.9em)
-// en slides los pies de imagen van sin numero ("Figura 1:"): solo el texto
+// en slides los pies de imagen van sin numero ("Figura 1:"): solo el texto. El
+// tamano se deriva del deck y no del contexto (un `em` habria quedado diminuto
+// en las slides {.image}, donde el cuerpo ya va reducido y el pie es casi todo
+// el texto de la slide).
 #set figure(numbering: none)
-#show figure.caption: set text(size: 0.8em, fill: luma(40%))
+// el subrayado distingue el enlace del resto del pie (typst no lo marca de
+// ninguna otra forma: un #link hereda el color del texto)
+#show figure.caption: it => {
+  set text(size: 0.75 * base_size, fill: luma(40%))
+  show link: underline
+  it
+}
 // las notas al pie (referencias) van pequenas. La separacion entre notas
 // consecutivas se controla con `gap` (pequeno); la distancia al footer de
 // atribucion se logra con `footer-descent` en #set page, no con un pad por
 // entrada (que inflaba el espacio cuando hay varias notas en una slide).
-#show footnote.entry: it => text(size: 11pt, fill: luma(40%), it)
+#show footnote.entry: it => text(size: 0.5 * base_size, fill: luma(40%), it)
 #set footnote.entry(
   separator: line(length: 30%, stroke: 0.5pt + luma(70%)),
   gap: 0.45em,
@@ -166,25 +185,40 @@
 // inferior se mantiene como el base (0.85cm) para que el footer de atribucion y
 // las notas al pie no se salgan de la slide (en modo full la imagen va centrada,
 // asi que ese margen solo recorta un poco el sangrado inferior).
-#let slide(title: none, bg: none, bg-image: none, centered: false, smaller: false, full: false, body) = {
+// Marca invisible que deja cada lamina para el aviso de desborde: `panduck
+// build` la consulta despues de compilar y compara la pagina donde empieza una
+// con la de la siguiente. Va dentro de un `place`, asi no ocupa espacio ni entra
+// en el calculo de centrado del cuerpo.
+#let pagemark(mark) = if mark != none { place(top + left, mark) }
+
+#let slide(mark: none, title: none, bg: none, bg-image: none, centered: false, smaller: false, full: false, body) = {
   let dark-bg = bg != none or bg-image != none
   page(
     fill: if dark-bg { bg } else { white },
     margin: if full { (x: 0.5cm, top: 0.5cm, bottom: base-margin.bottom) } else { base-margin },
     background: if bg-image != none { image(bg-image, width: 100%, height: 100%, fit: "cover") },
   )[
-    #set text(size: if full { 14pt } else if smaller { 17pt } else { 22pt }, fill: if dark-bg { white } else { mdark })
+    #pagemark(mark)
+    #set text(size: if full { 0.64 * base_size } else if smaller { 0.77 * base_size } else { base_size }, fill: if dark-bg { white } else { mdark })
     // sobre fondo oscuro las notas al pie van en claro para contrastar
-    #show footnote.entry: it => text(size: 11pt, fill: if dark-bg { luma(80%) } else { luma(40%) }, it)
+    #show footnote.entry: it => text(size: 0.5 * base_size, fill: if dark-bg { luma(80%) } else { luma(40%) }, it)
     #set footnote.entry(separator: line(length: 30%, stroke: 0.5pt + (if dark-bg { luma(55%) } else { luma(70%) })))
     #if title != none {
       v(0.1em)
-      text(size: 26pt, weight: "medium", fill: if dark-bg { white } else { mdark })[#title]
+      text(size: 1.18 * base_size, weight: "medium", fill: if dark-bg { white } else { mdark })[#title]
       v(0.2em)
       line(length: 100%, stroke: 1.2pt + (if dark-bg { white } else { mdark }))
       v(0.15em)
     }
-    #if full or centered {
+    #if full {
+      // `height: 1fr` toma el espacio que queda en la pagina (toda, o lo que
+      // sobra bajo el titulo) y centra el contenido ahi. Sin esa altura, el
+      // `horizon` no tiene contra que centrar y una slide con titulo empujaba
+      // la imagen a una pagina nueva. El `pad` separa el pie de la imagen del
+      // footer de atribucion; agrandar el margen inferior no sirve, porque el
+      // footer sube junto con el.
+      pad(bottom: 0.5cm, block(width: 100%, height: 1fr, align(center + horizon)[#body]))
+    } else if centered {
       align(center + horizon)[#body]
     } else {
       body
@@ -194,14 +228,15 @@
 
 // Slide de cita: texto grande con barra de acento a la izquierda; la atribucion
 // se escribe en *cursiva* y queda en color de acento.
-#let quote-slide(body) = {
+#let quote-slide(mark: none, body) = {
   page(fill: white, footer: none)[
+    #pagemark(mark)
     #align(horizon)[
       #block(stroke: (left: 3pt + accent), inset: (left: 1em, top: 0.3em, bottom: 0.3em))[
         // sin cursiva automatica: el cuerpo va en estilo normal y cada quien
         // decide que poner en *cursiva*. La barra de acento a la izquierda
         // distingue la cita.
-        #set text(size: 30pt, fill: mdark, font: quotefont_name)
+        #set text(size: 1.36 * base_size, fill: mdark, font: quotefont_name)
         #set par(leading: 0.55em)
         #body
       ]
@@ -212,8 +247,9 @@
 // Slide final ("cierre"): imagen opcional arriba, titulo grande centrado, regla
 // de acento y datos de contacto debajo. La imagen se pasa con
 // `## Titulo {.end image="ruta.png"}` (la ruta va por el filtro, sin escape).
-#let end-slide(title: none, image: none, body) = {
+#let end-slide(mark: none, title: none, image: none, body) = {
   page(fill: white, footer: none)[
+    #pagemark(mark)
     #set block(spacing: 0.3em)
     #align(center + horizon)[
       #if image != none {
@@ -221,12 +257,12 @@
         v(0.3em)
       }
       #if title != none {
-        text(size: 54pt, weight: "medium", fill: mdark)[#title]
-        v(0.9em)
+        text(size: 2.45 * base_size, weight: "medium", fill: mdark)[#title]
+        v(1.8em)
         line(length: 26%, stroke: 2.5pt + accent)
-        v(0.7em)
+        v(1.4em)
       }
-      #text(size: 24pt, fill: luma(35%))[#body]
+      #text(size: 1.1 * base_size, fill: luma(35%))[#body]
     ]
   ]
 }
@@ -234,13 +270,14 @@
 // Slide de declaracion ("statement"): fondo navy, texto grande centrado en
 // blanco para resaltar una idea. La frase clave va en **negrita** y se resalta
 // en color de acento. Se invoca con `## {.statement}`.
-#let statement-slide(body) = {
+#let statement-slide(mark: none, body) = {
   page(fill: mdark, footer: none)[
+    #pagemark(mark)
     // sobre fondo navy las notas al pie deben ir en claro para contrastar
-    #show footnote.entry: it => text(size: 11pt, fill: luma(80%), it)
+    #show footnote.entry: it => text(size: 0.5 * base_size, fill: luma(80%), it)
     #set footnote.entry(separator: line(length: 30%, stroke: 0.5pt + luma(55%)))
     #align(center + horizon)[
-      #set text(size: 32pt, fill: white, weight: "regular")
+      #set text(size: 1.45 * base_size, fill: white, weight: "regular")
       #set par(leading: 0.6em, justify: false)
       #show strong: set text(fill: accent, weight: "medium")
       #block(width: 82%)[#body]
@@ -249,10 +286,11 @@
 }
 
 // Slide de seccion (encabezado # de nivel 1): pagina completa en azul marino.
-#let section-slide(body) = {
+#let section-slide(mark: none, body) = {
   page(fill: mdark, footer: none)[
+    #pagemark(mark)
     #align(horizon)[
-      #text(size: 34pt, weight: "medium", fill: white)[#body]
+      #text(size: 1.55 * base_size, weight: "medium", fill: white)[#body]
       #v(0.3em)
       #line(length: 28%, stroke: 2.5pt + accent)
     ]

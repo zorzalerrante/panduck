@@ -129,20 +129,29 @@ end
 function Pandoc(doc)
   local out, buf = {}, {}
   local cur_attr, cur_title, have_slide = nil, nil, false
+  -- Cada lamina lleva una marca invisible con su numero y la pagina donde
+  -- empieza; `panduck build` la lee tras compilar para avisar de las que no
+  -- cupieron (typst las parte en dos paginas sin decir nada).
+  local n = 0
+  local function mark()
+    n = n + 1
+    return "mark: [#context [#metadata((n: " .. n .. ", p: counter(page).get().first(), " ..
+           "t: counter(page).final().first()))<panduck-page>]]"
+  end
 
   local function flush()
     if have_slide or #buf > 0 then
       local cls = cur_attr and cur_attr.classes
       if cls and cls:includes("quote") then
-        out[#out + 1] = pandoc.RawBlock("typst", "#quote-slide[")
+        out[#out + 1] = pandoc.RawBlock("typst", "#quote-slide(" .. mark() .. ")[")
         for _, b in ipairs(buf) do out[#out + 1] = b end
         out[#out + 1] = pandoc.RawBlock("typst", "]")
       elseif cls and cls:includes("statement") then
-        out[#out + 1] = pandoc.RawBlock("typst", "#statement-slide[")
+        out[#out + 1] = pandoc.RawBlock("typst", "#statement-slide(" .. mark() .. ")[")
         for _, b in ipairs(buf) do out[#out + 1] = b end
         out[#out + 1] = pandoc.RawBlock("typst", "]")
       elseif cls and cls:includes("end") then
-        local parts = {}
+        local parts = { mark() }
         if cur_title then parts[#parts + 1] = "title: [" .. to_typst(cur_title) .. "]" end
         local img = cur_attr.attributes["image"]
         if img then parts[#parts + 1] = 'image: "' .. img .. '"' end
@@ -150,7 +159,9 @@ function Pandoc(doc)
         for _, b in ipairs(buf) do out[#out + 1] = b end
         out[#out + 1] = pandoc.RawBlock("typst", "]")
       else
-        out[#out + 1] = pandoc.RawBlock("typst", "#slide(" .. slide_opts(cur_attr, cur_title) .. ")[")
+        local opts = slide_opts(cur_attr, cur_title)
+        out[#out + 1] = pandoc.RawBlock("typst",
+          "#slide(" .. mark() .. (opts ~= "" and ", " .. opts or "") .. ")[")
         for _, b in ipairs(buf) do out[#out + 1] = b end
         out[#out + 1] = pandoc.RawBlock("typst", "]")
       end
@@ -161,7 +172,8 @@ function Pandoc(doc)
   for _, blk in ipairs(doc.blocks) do
     if blk.t == "Header" and blk.level == 1 then
       flush()
-      out[#out + 1] = pandoc.RawBlock("typst", "#section-slide[" .. to_typst(blk.content) .. "]")
+      out[#out + 1] = pandoc.RawBlock("typst",
+        "#section-slide(" .. mark() .. ")[" .. to_typst(blk.content) .. "]")
     elseif blk.t == "Header" and blk.level == 2 then
       flush()
       cur_title, cur_attr, have_slide = blk.content, blk.attr, true

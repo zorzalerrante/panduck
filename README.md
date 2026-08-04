@@ -21,6 +21,7 @@ panduck build -p elsevier --anonymous   # blind review
 panduck build -t docx             # main.docx
 panduck build -t tex              # main.tex standalone
 panduck build datos_head.yaml datos.md  # fuentes explicitas (metadata primero)
+panduck build documento.md        # archivo unico, con el front matter dentro del md
 panduck dist -p elsevier          # empaqueta tex + imagenes en dist/ para submission
 panduck titlepage                 # titlepage.docx desde head.yaml
 panduck cover-letter              # cover-letter.docx desde head.yaml
@@ -66,13 +67,36 @@ Bloque centrado.
 
 Es opt-in por clase (no afecta documentos que no las usan). En typst las familias `sans`/`mono` toman el nombre de `sansfont`/`monofont` del `head.yaml`. En los perfiles con template LaTeX propio (`elsevier`, `dcc-informe`) las clases que requieren paquetes extra (subrayado/tachado, bloques, color) pueden no cargar su paquete; el resto funciona.
 
+## Diagramas de Graphviz
+
+Un bloque de código con clase `.dot` (o `.graphviz`) se dibuja al compilar y se inserta como imagen, en todos los perfiles. Con `caption` sale como figura numerada por crossref y sin pie como imagen centrada. Atributos: `width` (80% por defecto), `height`, `engine` (`dot`, `neato`, `circo`, `fdp`, `sfdp`, `twopi`, `osage`) y `caption`. El formato lo elige el writer: SVG en typst, PDF en LaTeX, PNG en docx.
+
+El diagrama toma la tipografía y los colores del documento sin declararlos, y hay tres estilos de nodo que se marcan con `class`:
+
+````markdown
+```{#fig:flujo .dot caption="Las tres etapas"}
+digraph {
+  rankdir=LR;
+  Datos -> Modelo -> Resultado;
+  Modelo [class="strong"];      // fondo del color del texto, letra contrastante
+  Resultado [class="accent"];   // fondo del color destacado, letra contrastante
+}
+```
+````
+
+`base` es el estilo por defecto (fondo del papel, borde y letra del color del texto) y no hace falta escribirlo. Los alias en castellano son `base`, `fuerte` y `acento`. El color de la letra se calcula por la luminancia del fondo, así que un acento claro lleva letra oscura y uno oscuro letra clara; para eso el color va en hex (con un nombre de graphviz como `steelblue` la letra queda oscura).
+
+La paleta y la tipografía se cambian desde el `head.yaml`: `dot-fg` (texto), `dot-bg` (papel), `dot-accent` (destacado) y `dot-font` (default: `mainfont`). Los colores van entre comillas o sin el numeral (`"#0A0E50"` o `0A0E50`), porque en YAML `#` abre un comentario; un valor que no parece color se avisa por stderr y cae al del tema. El perfil `slides` trae su propia paleta (navy y magenta del tema), y los valores del `head.yaml` la sobreescriben.
+
+Como `class` es un atributo válido de graphviz, el mismo fuente se puede compilar con `dot` a mano: pierde los colores, no la validez. Los defaults que inyecta panduck van al inicio del grafo, así que un `node [...]` escrito después manda sobre ellos.
+
 ## Perfiles
 
 | Perfil | Descripción |
 |---|---|
 | `default` | Template default de pandoc, xelatex, crossref + citeproc. La apariencia se controla desde `head.yaml` (geometry, fonts, etc.). |
 | `elsevier` | Clase elsarticle con filtros Lua: limpieza de header-includes, afiliaciones agrupadas (`aff1`, `aff2`, ...) y sección de Funding insertada antes de las referencias. |
-| `slides` (`typst`)| Slides académicas en PDF vía typst (rápido, sin LaTeX), con tema azul marino + magenta sobre blanco (inspirado en Metropolis). `##` = slide, `#` = slide de sección. Opciones por slide como atributos de clase: `{.center}`, `{.smaller}`, `{.image}` (foco en imagen, a sangre), `{.quote}` (cita: texto grande con barra de acento a la izquierda; sin cursiva automática, se elige qué va en `*cursiva*`), `{.statement}` (declaración: fondo navy, texto grande centrado en blanco, frase clave en `**negrita**` resaltada en acento), `{.end image="x.png"}` (slide de cierre con imagen opcional), `{background="#1b3b6f"}`, dos columnas con grosor (`width=`), alineación por bloque o columna (`::: left` / `::: right` / `::: center`, o esas clases sobre una `.column`) y diagramas Graphviz (` ```{.dot} `). Citas con `>` estilizadas como cita (barra de acento, tipografía de citas y cursiva). Texto inline a otro tamaño o estilo con las clases compartidas (ver "Estilos de texto": `.small`, `.large`, `.sc`, etc.; las versalitas son sintéticas, sirven aunque la fuente no traiga la feature smcp). Callouts con divs `::: warning` / `::: theorem` / `::: prompt` ... (tipos `note`, `tip`, `warning`, `alert`/`important`, `theorem`, `definition`, `prompt`, `callout`; `title=` sobreescribe la etiqueta; `prompt` usa monofont). Notas al pie para referencias (legibles también sobre slides de fondo oscuro). Tablas con encabezado estilizado (primera fila con fondo tenue y negrita). Footer `x / total`. Portada con `title-image` (y `title-image-credit`, crédito vertical a un costado de la imagen), `logos` (lista), `affiliation` (una o varias) y `venue`. Tipografía configurable en `head.yaml`: `mainfont`, `quotefont` (citas), `monofont` (código y prompts, default Fira Code a 0.9em); tamaños `logo-height`, `end-image-height`. Requiere `typst` (`sudo snap install typst`). |
+| `slides` (`typst`)| Slides académicas en PDF vía typst (rápido, sin LaTeX), con tema azul marino + magenta sobre blanco (inspirado en Metropolis). `##` = slide, `#` = slide de sección. Opciones por slide como atributos de clase: `{.center}`, `{.smaller}`, `{.image}` (foco en imagen, a sangre), `{.quote}` (cita: texto grande con barra de acento a la izquierda; sin cursiva automática, se elige qué va en `*cursiva*`), `{.statement}` (declaración: fondo navy, texto grande centrado en blanco, frase clave en `**negrita**` resaltada en acento), `{.end image="x.png"}` (slide de cierre con imagen opcional), `{background="#1b3b6f"}`, dos columnas con grosor (`width=`), alineación por bloque o columna (`::: left` / `::: right` / `::: center`, o esas clases sobre una `.column`) y diagramas Graphviz (` ```{.dot} `). Citas con `>` estilizadas como cita (barra de acento, tipografía de citas y cursiva). Texto inline a otro tamaño o estilo con las clases compartidas (ver "Estilos de texto": `.small`, `.large`, `.sc`, etc.; las versalitas son sintéticas, sirven aunque la fuente no traiga la feature smcp). Callouts con divs `::: warning` / `::: theorem` / `::: prompt` ... (tipos `note`, `tip`, `warning`, `alert`/`important`, `theorem`, `definition`, `prompt`, `callout`; `title=` sobreescribe la etiqueta; `prompt` usa monofont). Notas al pie para referencias (legibles también sobre slides de fondo oscuro). Tablas con encabezado estilizado (primera fila con fondo tenue y negrita). Footer `x / total`. Portada con `title-image` (y `title-image-credit`, crédito vertical a un costado de la imagen), `logos` (lista), `affiliation` (una o varias) y `venue`. Tipografía configurable en `head.yaml`: `mainfont`, `quotefont` (citas), `monofont` (código y prompts, default Fira Code a 0.9em); tamaños `logo-height`, `end-image-height`. `fontsize` (default 22pt) escala el deck completo: títulos de slide, texto reducido de `{.smaller}` y `{.image}`, pies de figura y notas al pie se derivan de él. Los pies de figura van del porte del deck y sus enlaces subrayados. Requiere `typst` (`sudo snap install typst`). |
 | `paper` | Paper académico genérico (working paper). Compila a PDF (clase `article` con line numbers y pie de página vía `header-includes`) y a docx con un reference-doc de Word estilizado (cuerpo Times New Roman, interlineado 1.5). |
 | `dcc-informe` | Informe E o memoria del DCC (U. de Chile), clase `umemoria` con portada institucional, capítulos como nivel 1 de Markdown y bibliografía ACM. |
 | `instagram` (`typst`) | Carruseles de Instagram en PDF y una PNG por post (256 dpi por defecto). Cada `#` es un post (página vertical 4:5, configurable). Opciones por post como atributos del encabezado: `{background-image="bg.png"}` (imagen cover), `{pagecolor="1b3b6f"}`, `{textcolor="ffffff"}`, `{fontsize="11pt"}`, `{.top}`, `{.left}`. Color de texto por contraste automático (claro/oscuro) si no se fija. Imagen circular (`.circle`), columnas, y los estilos de texto compartidos (`.LARGE`, `.sc`, `.sff`, ...; ver "Estilos de texto"). Pie común con iconos FontAwesome (`:instagram:`, `:globe:`, ...) y número de post. `mainfont`/`sansfont` configurables en `head.yaml`. Requiere `typst` e ImageMagick (`convert`). |
@@ -103,6 +127,7 @@ Pandoc **concatena** las listas (`filters`) al apilar `--defaults`: los filtros 
 ## Convenciones del proyecto
 
 - `main.md`: cuerpo del documento. `head.yaml`: metadatos (título, autores, abstract, `bibliography`, `csl`). `references.bib`: bibliografía.
+- **El `head.yaml` aparte es convención, no requisito**: los mismos metadatos pueden ir como front matter YAML dentro del `.md` y el documento compila igual, con cualquier perfil (`panduck build documento.md -p documento`). Si el archivo se llama `main.md` y no hay `head.yaml`, `panduck build` sin argumentos también lo toma. Al pasar las dos fuentes, un campo definido en ambas se resuelve a favor de la última: como el `.md` va al final, su front matter sobreescribe al `head.yaml`. Los subcomandos `titlepage`, `cover-letter` y `highlights` leen `head.yaml` por defecto, así que con metadatos embebidos hay que indicarlo (`panduck titlepage -m documento.md`).
 - El CSL se indica por nombre en `head.yaml` (por ejemplo `csl: elsevier-harvard.csl`); se resuelve desde `data/csl/` sin copiar el archivo al proyecto.
 - `titlepage` y `cover-letter` usan los templates de panduck, pero si el proyecto tiene `titlepage-template.md` o `cover-letter-template.md` locales, esos tienen prioridad.
 - Las dependencias específicas de cada proyecto (generación de figuras con dot o scripts de Python) se quedan en un Makefile local mínimo que termina llamando a `panduck build`.

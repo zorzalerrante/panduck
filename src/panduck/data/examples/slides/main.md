@@ -28,8 +28,25 @@ Las citas funcionan igual que en los papers [@minto2009pyramid].
 ```{.dot width="55%"}
 digraph G {
   rankdir=LR;
-  node [shape=box, style=rounded];
+  node [shape=box, style="filled,rounded"];
   Datos -> Modelo -> Resultado;
+  Modelo [class="strong"];
+  Resultado [class="accent"];
+}
+```
+
+Los nodos usan la tipografia y los colores del tema; `class="strong"` y
+`class="accent"` marcan los destacados.
+
+## Una imagen a pagina completa {.image}
+
+```{.dot width="62%" caption="El pie va en el tamano del deck y los enlaces salen subrayados, como [este](https://ejemplo.cl)"}
+digraph G {
+  rankdir=LR;
+  node [shape=box, style="filled,rounded"];
+  Datos -> Modelo -> Resultado;
+  Modelo [class="strong"];
+  Resultado [class="accent"];
 }
 ```
 
