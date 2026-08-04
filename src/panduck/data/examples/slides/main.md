@@ -6,6 +6,7 @@
 - Cada `#` genera una slide de sección (página de color).
 - El texto se escribe en Markdown y se compila a PDF con typst.
 - Las opciones de cada slide se ponen como atributos de clase en el título.
+- Los enlaces van subrayados, como el de [este repositorio](https://github.com/zorzalerrante/panduck).
 
 ## Dos columnas
 

@@ -105,6 +105,10 @@
 #show math.equation: set text(font: ($if(mathfont)$"$mathfont$"$else$"Fira Math"$endif$,), size: $if(math-scale)$$math-scale$$else$1$endif$em)
 #show math.equation: it => math.upright(it)
 #show heading: set text(fill: mdark)
+// los enlaces van subrayados en todo el deck (cuerpo, pies de figura, notas al
+// pie): typst no los marca de ninguna otra forma, un #link hereda el color del
+// texto y quedaria indistinguible del resto
+#show link: underline
 #set list(marker: box(width: 0.42em, height: 0.42em, fill: accent, baseline: -0.1em), spacing: 0.9em)
 #set enum(spacing: 0.9em)
 // en slides los pies de imagen van sin numero ("Figura 1:"): solo el texto. El
@@ -112,13 +116,7 @@
 // en las slides {.image}, donde el cuerpo ya va reducido y el pie es casi todo
 // el texto de la slide).
 #set figure(numbering: none)
-// el subrayado distingue el enlace del resto del pie (typst no lo marca de
-// ninguna otra forma: un #link hereda el color del texto)
-#show figure.caption: it => {
-  set text(size: 0.75 * base_size, fill: luma(40%))
-  show link: underline
-  it
-}
+#show figure.caption: set text(size: 0.75 * base_size, fill: luma(40%))
 // las notas al pie (referencias) van pequenas. La separacion entre notas
 // consecutivas se controla con `gap` (pequeno); la distancia al footer de
 // atribucion se logra con `footer-descent` en #set page, no con un pad por
