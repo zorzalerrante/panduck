@@ -69,8 +69,17 @@ $endfor$
 $if(subtitle)$
   #block(above: 0.6em, text(size: 1.15em)[$subtitle$])
 $endif$
-$if(author)$
+$if(anonymous)$
+  #block(above: 1.1em, text(size: 1.05em)[Anonymous])
+$else$
+$if(authors)$
+  // `authors:` es el contrato de los perfiles de revista (lista de objetos con
+  // `name`); aca se toman solo los nombres, para que el mismo head sirva en los
+  // dos lados. Un elemento que sea un string suelto tambien vale.
+  #block(above: 1.1em, text(size: 1.05em)[$for(authors)$$if(authors.name)$$authors.name$$else$$authors$$endif$$sep$ · $endfor$])
+$elseif(author)$
   #block(above: 1.1em, text(size: 1.05em)[$for(author)$$author$$sep$ · $endfor$])
+$endif$
 $endif$
 $if(date)$
   #block(above: 0.5em, text(size: 0.95em)[$date$])
