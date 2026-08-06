@@ -44,6 +44,7 @@
 // notas al margen; se le pasa explicito (ver set-page-properties mas abajo)
 // porque si no lo captura del contexto donde se llama, y ahi es la portada con
 // otros margenes. Con papersize distinto de carta, fijar `paperwidth` en el head.
+#let margen_sup = $if(top-margin)$$top-margin$$else$1in$endif$
 #let ancho_hoja = $if(paperwidth)$$paperwidth$$else$8.5in$endif$
 #let ancho_texto = ancho_hoja - margen_izq - margen_der
 #let color_acento = rgb($if(accent)$"$accent$"$else$"#A5211F"$endif$)
@@ -53,7 +54,7 @@
 
 #set page(
   paper: "$if(papersize)$$papersize$$else$us-letter$endif$",
-  margin: (left: margen_izq, right: margen_der, top: 1in, bottom: 0.9in),
+  margin: (left: margen_izq, right: margen_der, top: margen_sup, bottom: 0.9in),
   // Encabezado con el capitulo en curso, en el ancho completo (texto + margen).
   header: context {
     let pagina = here().page()
@@ -62,13 +63,18 @@
     if capitulos.any(c => c.location().page() == pagina) { return }
     let previos = capitulos.filter(c => c.location().page() < pagina)
     if previos.len() == 0 { return }
-    set text(size: 8pt)
+    set text(size: 0.8em)
     block(width: 100% + margen_der - margen_izq)[
       #emph[#previos.last().body] #h(1fr) #emph[#counter(page).display()]
     ]
   },
   footer: none,
 )
+
+// Cuanto puede subir una figura de margen cuando el margen esta libre sobre ella
+// (`margin-float-up` en el head). En 0pt se queda donde se declaro.
+#subida-maxima.update($if(margin-float-up)$$margin-float-up$$else$0pt$endif$)
+#tope-texto.update(margen_sup)
 
 #set text(
   font: ($if(mainfont)$"$mainfont$"$else$"Libertinus Serif"$endif$,),
@@ -115,7 +121,10 @@ $endif$
     layout(size => {
       let nat = measure(image(it.source, alt: "__cap__", width: size.width))
       if nat.height > margen_img_alto {
-        image(it.source, alt: "__cap__", height: margen_img_alto)
+        // `width: auto` es explicito a proposito: tufte.lua deja un
+        // `set image(width: 100%)` en scope y sin esto la imagen quedaria con
+        // ancho y alto fijos a la vez, deformada.
+        image(it.source, alt: "__cap__", width: auto, height: margen_img_alto)
       } else { it }
     })
   }
@@ -127,37 +136,73 @@ $endif$
 #set figure(numbering: none)
 // Pie de figura mas chico y alineado a la izquierda; el prefijo que escribe
 // crossref ("Figura 8.1:", "Tabla 3.2:") va en negrita.
-#show figure.caption: it => {
+#let estilo-pie(cuerpo) = {
   set align(left)
-  set text(size: 8.5pt)
+  set text(size: 0.85em)
   show regex("^(Figura|Tabla|Cuadro)\s+[0-9.]+:"): strong
-  it
+  cuerpo
 }
-// Mas aire entre las figuras de la columna principal (cuerpo y `.wide`) y el
-// texto. En las figuras de margen se anula (tufte.lua fija un valor chico dentro
-// del `::: margin`) para no sumar al desborde vertical de las notas apiladas.
+#show figure.caption: it => estilo-pie(it)
+
+// El pie de las figuras de la columna de texto va al margen, a la altura del
+// borde superior de la figura, que es el rasgo del estilo Tufte. Conservan el pie
+// debajo tres casos: las figuras anchas (`::: wide`), que ya invaden el margen;
+// las que viven en el margen (`::: margin`), donde anidar otra nota lo
+// descolocaria; y el modo `full`, que no tiene margen. Los dos primeros los
+// marca tufte.lua apagando `pie-al-margen` alrededor del bloque.
+#show figure: it => context {
+  if es_full or not pie-al-margen.get() or it.caption == none {
+    it
+  } else {
+    // El pie se ancla al borde superior de la imagen. Va en un `place` para que
+    // no ocupe una linea del flujo: en el flujo empujaba la imagen hacia abajo y
+    // el pie quedaba mas alto que la figura que describe. Con `dy: auto`
+    // drafting igual lo baja si a esa altura ya hay otra nota.
+    // Menos aire arriba que abajo: el que separa la figura del texto que sigue
+    // tiene que ganarle al que la separa del texto que la anuncia.
+    block(breakable: false, above: 1.3em, below: 2.4em, width: 100%)[
+      #place(top + left, box(sidenote(numbered: false, estilo-pie(it.caption.body))))
+      #align(center, it.body)
+    ]
+  }
+}
+// Mas aire entre las figuras de la columna principal y el texto. En las figuras
+// de margen se anula (tufte.lua fija un valor chico dentro del `::: margin`)
+// para no sumar al desborde vertical de las notas apiladas.
 #show figure: set block(above: 1.9em, below: 1.9em)
+
+// Los encabezados de seccion ocupan el ancho completo (texto + margen), como el
+// titulo de capitulo: son la division del texto y se leen mejor si cruzan la
+// columna. El bloque va con `above`/`below` en cero porque el aire lo ponen los
+// `v()`, que al ser `weak` colapsan con el espaciado del bloque vecino.
+#let ancho_completo = 100% + margen_der - margen_izq
 
 // ---- Capitulos y partes -----------------------------------------------------
 // El nivel 1 es el capitulo: abre pagina, con el numero grande sobre el titulo.
 #set heading(numbering: "1.1.1")
 #show heading.where(level: 1): it => {
   pagebreak(weak: true)
-  block(width: 100% + margen_der - margen_izq, above: 0pt, below: 2.2em)[
+  block(width: ancho_completo, above: 0pt, below: 2.2em)[
     #if it.numbering != none [
-      #text(size: 52pt, fill: color_acento, weight: "bold")[#counter(heading).display("1")]
+      #text(size: 5.2em, fill: color_acento, weight: "bold")[#counter(heading).display("1")]
       #v(-0.3em)
     ]
-    #text(size: 20pt, weight: "bold")[#it.body]
+    #text(size: 2em, weight: "bold")[#it.body]
     #v(0.4em)
     #line(length: 100%, stroke: 0.6pt + color_acento)
   ]
 }
 #show heading.where(level: 2): it => {
-  v(1.1em, weak: true); text(size: 12pt, weight: "bold", it); v(0.7em, weak: true)
+  v(2.4em, weak: true)
+  block(width: ancho_completo, above: 0pt, below: 0pt,
+        text(size: 1.2em, weight: "bold", it))
+  v(0.8em, weak: true)
 }
 #show heading.where(level: 3): it => {
-  v(1em, weak: true); text(size: 11pt, weight: "bold", it); v(0.6em, weak: true)
+  v(1.8em, weak: true)
+  block(width: ancho_completo, above: 0pt, below: 0pt,
+        text(size: 1.1em, weight: "bold", it))
+  v(0.7em, weak: true)
 }
 
 // Las paginas sueltas (portada, indice, partes) usan margenes simetricos sobre el
@@ -176,11 +221,11 @@ $endif$
     #set align(center + horizon)
     #set par(justify: false)
     #set text(hyphenate: false)
-    #text(size: 11pt, tracking: 3pt, fill: color_acento)[
+    #text(size: 1.1em, tracking: 3pt, fill: color_acento)[
       #upper[$if(part-label)$$part-label$$else$Parte$endif$] #context parte.display("I")
     ]
     #v(0.6em)
-    #text(size: 26pt, weight: "bold")[#body]
+    #text(size: 2.6em, weight: "bold")[#body]
   ]
 }
 
@@ -191,9 +236,16 @@ $endif$
   // dos `#page()`), pero con `page-width` EXPLICITO: si no, drafting lo captura
   // del contexto y aca es la portada con margenes simetricos, no el cuerpo, y las
   // marginfigures se saldrian por el borde derecho.
+  // La geometria va EXACTA. drafting detecta que una nota quedo al final de una
+  // linea comparando la posicion del ancla contra `margin-left + page-width`, y
+  // solo corrige si calzan al 0.1pt. toffee-tufte pasaba `margin-left * 1.2`
+  // para abrir una canaleta; con ese 20% de mas la comparacion nunca daba y la
+  // nota cuyo llamado caia justo al final de una linea se colocaba dentro de la
+  // columna de texto, encima del parrafo. La canaleta ya la da drafting, que
+  // coloca la nota en `101%` del ancho del texto y no en `100%`.
   #set-page-properties(
     margin-right: margen_der - margen_izq,
-    margin-left: margen_izq * 1.2,
+    margin-left: margen_izq,
     page-width: ancho_texto,
   )
   #set-margin-note-defaults(stroke: none, side: right)
@@ -205,26 +257,26 @@ $endif$
   #image("$title-image$", width: 6cm)
   #v(1.2em)
   $endif$
-  #text(size: 30pt, weight: "bold")[$title$]
+  #text(size: 3em, weight: "bold")[$title$]
   $if(subtitle)$
   #v(0.5em)
-  #text(size: 15pt)[$subtitle$]
+  #text(size: 1.5em)[$subtitle$]
   $endif$
   #v(1.5em)
   #line(length: 35%, stroke: 0.6pt + color_acento)
   #v(1.5em)
   $for(author)$
-  #text(size: 13pt)[$author$] \
+  #text(size: 1.3em)[$author$] \
   $endfor$
   $if(date)$
   #v(0.8em)
-  #text(size: 11pt)[$date$]
+  #text(size: 1.1em)[$date$]
   $endif$
 ]
 
 $if(toc)$
 #page(margin: margen_simetrico, header: none, footer: none)[
-  #text(size: 16pt, weight: "bold")[$if(toc-title)$$toc-title$$else$Contenidos$endif$]
+  #text(size: 1.6em, weight: "bold")[$if(toc-title)$$toc-title$$else$Contenidos$endif$]
   #v(1em)
   #outline(title: none, depth: $if(toc-depth)$$toc-depth$$else$2$endif$, indent: 1.2em)
 ]

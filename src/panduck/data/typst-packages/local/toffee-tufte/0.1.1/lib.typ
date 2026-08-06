@@ -12,6 +12,18 @@
 
 #let fullwidth = state("fullwidth", false)
 
+// panduck: bandera que lee la plantilla tufte-book para decidir si el pie de
+// figura va al margen. tufte.lua la apaga dentro de `::: margin` y de `::: wide`,
+// donde no queda margen libre en que ponerlo.
+#let pie-al-margen = state("pie-al-margen", true)
+
+// panduck: cuanto puede subir una figura de margen si el margen esta libre a esa
+// altura, y donde empieza el area de texto (para no treparse al encabezado). Las
+// fija la plantilla; en 0pt la figura se queda donde se declaro, que es el
+// comportamiento original.
+#let subida-maxima = state("subida-maxima", 0pt)
+#let tope-texto = state("tope-texto", 1in)
+
 #let template(
   title: none,
   authors: none,
@@ -211,9 +223,12 @@
       notecounter.step()
       context super(notecounter.display())
     }
-    text(size: 8pt, margin-note(
+    // panduck: los tamanos eran fijos (8pt y 11pt), pensados para un cuerpo de
+    // 10pt. Al subir `fontsize` en el head.yaml las notas quedaban diminutas, asi
+    // que van en em: mantienen la proporcion del diseno original.
+    text(size: 0.8em, margin-note(
       if numbered {
-        text(size: 11pt, {
+        text(size: 1.375em, {
           context super(notecounter.display())
         })
         body
@@ -223,6 +238,50 @@
       dy: dy,
     ))
   }
+}
+
+/// panduck: figura de margen que sube si hay espacio libre sobre ella.
+///
+/// Una figura declarada a media altura de un parrafo empieza, por omision, en la
+/// linea exacta del `:::  margin`, que suele dejar un hueco arriba. Esta version
+/// la sube hasta el pie de la nota anterior de la pagina y como maximo
+/// `subida-maxima`; si hay una nota justo encima no sube nada, y nunca pasa del
+/// inicio del area de texto.
+///
+/// - `body: content` Required. El contenido de la figura.
+#let sidenote-flotante(body) = context {
+  // `to-absolute` resuelve un limite escrito en em (depende del cuerpo): sin eso
+  // no se puede comparar ni operar con las posiciones, que vienen en pt
+  let limite = subida-maxima.get().to-absolute()
+  if fullwidth.get() or limite == 0pt {
+    return sidenote(numbered: false, body)
+  }
+  let y = here().position().y
+  // margen disponible arriba: el que pida el limite, sin salirse del area de texto
+  let espacio = calc.min(limite, calc.max(0pt, y - tope-texto.get().to-absolute()))
+
+  // Una figura que sube hasta quedar al lado de la seccion anterior confunde mas
+  // de lo que ayuda. Si la subida completa cruzaria el ultimo encabezado, sube
+  // solo esta fraccion de lo que queda hasta el: se acerca al parrafo sin salirse
+  // de su seccion.
+  // El tope es una cota, no un caso aparte: si fuera `si cruza, usa la fraccion`,
+  // subir el limite podria reducir la subida (justo al pasar el umbral), que es
+  // al reves de lo que uno espera al configurarlo.
+  let fraccion-en-el-borde = 0.5
+  let previos = query(selector(heading).before(here()))
+  if previos.len() > 0 {
+    let h = previos.last().location()
+    if h.page() == here().page() {
+      let hasta-el-encabezado = y - h.position().y
+      espacio = calc.min(espacio, calc.max(0pt, hasta-el-encabezado * fraccion-en-el-borde))
+    }
+  }
+
+  let pagina = str(here().page())
+  let descenso = note-descent.get().at(pagina, default: (left: 0pt, right: 0pt)).right
+  // dy negativo sube. El maximo con `descenso - y` es lo que impide pisar la nota
+  // anterior: si esa nota termina bajo el ancla, la figura incluso baja.
+  sidenote(numbered: false, dy: calc.max(-espacio, descenso - y), body)
 }
 
 /// A sidenote citation.

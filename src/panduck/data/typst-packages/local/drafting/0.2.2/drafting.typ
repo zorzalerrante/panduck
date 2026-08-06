@@ -661,22 +661,36 @@
       }
     }
 
+    // Notes at the end of a line misreport their x position, the placed box will wrap
+    // onto the next line and invalidate the calculated distance.
+    // A hacky fix is to manually replace the x position to an offset of 0.
+    //
+    // panduck: esta correccion estaba DENTRO del `if dy == auto`, pero es sobre la
+    // posicion horizontal y no tiene nada que ver con dy. Al saltarsela, una nota
+    // con dy explicito que caia al final de una linea se colocaba fuera del borde
+    // derecho de la pagina. Se nota con las figuras de margen, que tufte.lua pega
+    // al final del parrafo anterior: quedan siempre al final de una linea.
+    let is-end-of-line = (
+      calc.abs(anchor-x - properties.margin-left - properties.page-width - properties.page-offset-x) < 0.1pt
+    )
+    if is-end-of-line {
+      anchor-x -= properties.page-width
+    }
+
+    // panduck: cuando la introspeccion de posicion no se resuelve (typst avisa
+    // "context position did not stabilize"), `here().position().x` devuelve 0 y
+    // `dist-to-margin` sale sobrada en exactamente `margin-left`: la nota cae
+    // media columna a la derecha y su texto se corta en el borde de la hoja. El
+    // ancla de una nota de margen siempre esta dentro de la columna de texto, asi
+    // que se acota por abajo; para un ancla legitima la cota no hace nada.
+    anchor-x = calc.max(anchor-x, properties.margin-left)
+
     // `let` assignment allows mutating argument
     let dy = dy
     if dy == auto {
       let (cur-page, descents) = _get-current-descent(note-descent.get(), page-number: here().page())
       let cur-descent = descents.at(repr(properties.side))
       dy = calc.max(0pt, cur-descent - pos.y)
-      // Notes at the end of a line misreport their x position, the placed box will wrap
-      // onto the next line and invalidate the calculated distance.
-      // A hacky fix is to manually replace the x position to an offset of 0.
-
-      let is-end-of-line = (
-        calc.abs(anchor-x - properties.margin-left - properties.page-width - properties.page-offset-x) < 0.1pt
-      )
-      if is-end-of-line {
-        anchor-x -= properties.page-width
-      }
     }
 
     let margin-func = if properties.side == right {
