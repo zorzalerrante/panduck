@@ -40,6 +40,21 @@ $endif$
   it
 }
 #show figure: set block(above: 1.5em, below: 1.5em)
+// Una figura de pandoc es un #figure, que por omision no se parte entre paginas:
+// una tabla mas alta que la pagina se comprimia en una sola y sus ultimas filas
+// quedaban impresas unas sobre otras. Se vuelve breakable SOLO si no cabe: de lo
+// contrario una tabla normal se partiria al final de una pagina y dejaria el pie
+// huerfano en la siguiente, cuando antes viajaba entera con su pie.
+// El alto se compara contra la pagina entera y no contra `size.height` de un
+// `layout`, que es lo que queda de la pagina en curso: con eso, una tabla que si
+// cabe se partia igual cuando quedaba poco espacio.
+// Se mide sin envolver en `layout`: ese contenedor no es breakable y la figura
+// quedaba atrapada adentro, comprimida igual que antes.
+#show figure: it => context {
+  let alto_util = page.height - (if type(_margin) == length { 2 * _margin } else { 0pt })
+  set block(breakable: measure(it.body).height > alto_util)
+  it
+}
 
 #show raw: set text(font: _monofont, size: 0.92em)
 #show raw.where(block: true): it => block(

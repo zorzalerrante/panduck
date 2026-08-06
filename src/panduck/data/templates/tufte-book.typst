@@ -134,6 +134,12 @@ $endif$
 // pie; sin apagar la nativa de typst saldria dos veces. Va antes de todo para
 // alcanzar tambien el area de notas al pie (modo full).
 #set figure(numbering: none)
+// Una figura de pandoc es un #figure de typst, que por omision no se parte entre
+// paginas. `no_cabe` decide si hay que dejarla partirse: se compara su altura
+// natural contra el bloque de texto de la pagina (la caja util, sin los margenes
+// verticales). Hay que llamarla dentro de un `context`.
+#let no_cabe(cuerpo) = measure(cuerpo).height > (page.height - margen_sup - 0.9in)
+
 // Pie de figura mas chico y alineado a la izquierda; el prefijo que escribe
 // crossref ("Figura 8.1:", "Tabla 3.2:") va en negrita.
 #let estilo-pie(cuerpo) = {
@@ -160,7 +166,12 @@ $endif$
     // drafting igual lo baja si a esa altura ya hay otra nota.
     // Menos aire arriba que abajo: el que separa la figura del texto que sigue
     // tiene que ganarle al que la separa del texto que la anuncia.
-    block(breakable: false, above: 1.3em, below: 2.4em, width: 100%)[
+    // `breakable` para que una tabla mas alta que la pagina se parta en vez de
+    // comprimirse (typst la mete a la fuerza en una pagina y las ultimas filas
+    // quedan impresas unas sobre otras). Solo si no cabe: partirla siempre
+    // dejaria el pie huerfano cuando la tabla si cabia entera. El pie sigue al
+    // margen, a la altura donde empieza la tabla.
+    block(breakable: no_cabe(it.body), above: 1.3em, below: 2.4em, width: 100%)[
       #place(top + left, box(sidenote(numbered: false, estilo-pie(it.caption.body))))
       #align(center, it.body)
     ]
@@ -170,6 +181,13 @@ $endif$
 // de margen se anula (tufte.lua fija un valor chico dentro del `::: margin`)
 // para no sumar al desborde vertical de las notas apiladas.
 #show figure: set block(above: 1.9em, below: 1.9em)
+// El `set` cubre las figuras que no pasan por el envoltorio de arriba (modo
+// `full`, figuras sin pie, las del margen); el envoltorio lo pide explicito
+// porque el argumento le gana al `set`.
+#show figure: it => context {
+  set block(breakable: no_cabe(it.body))
+  it
+}
 
 // Los encabezados de seccion ocupan el ancho completo (texto + margen), como el
 // titulo de capitulo: son la division del texto y se leen mejor si cruzan la

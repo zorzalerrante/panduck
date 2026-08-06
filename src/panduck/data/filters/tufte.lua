@@ -75,20 +75,8 @@ end
 -- basta para volver a descolocar una figura cerca de un salto de pagina, medido.
 -- Se prefiere el espacio de mas: es cosmetico y afecta a pocos pares, mientras
 -- que la figura descolocada sale impresa fuera de la hoja.
-local function bloque_margen(el)
-  local out = {
-    pandoc.RawBlock("typst", PIE_ABAJO),
-    pandoc.RawBlock("typst", ABRE_MARGEN),
-  }
-  for _, blk in ipairs(el.content) do out[#out + 1] = blk end
-  out[#out + 1] = pandoc.RawBlock("typst", "]")
-  out[#out + 1] = pandoc.RawBlock("typst",
-    PIE_AL_MARGEN .. "#parbreak()")
-  return out
-end
-
 local function divs(el)
-  if el.classes:includes("margin") then return bloque_margen(el) end
+  if el.classes:includes("margin") then return wrap(el, ABRE_MARGEN) end
   if el.classes:includes("wide") then return wrap(el, "#wideblock[") end
 end
 

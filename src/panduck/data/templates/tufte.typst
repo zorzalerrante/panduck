@@ -127,6 +127,17 @@ $endif$
 // Mas aire entre las figuras de la columna principal (cuerpo y `.wide`) y el
 // texto; en las de margen se anula dentro del `::: margin` (ver tufte.lua).
 #show figure: set block(above: 1.9em, below: 1.9em)
+// Una figura de pandoc es un #figure, que por omision no se parte entre paginas:
+// una tabla mas alta que la pagina saltaba entera a la siguiente y ahi se
+// comprimia, con sus ultimas filas superpuestas. Se vuelve breakable SOLO si no
+// cabe; si se hiciera siempre, una tabla normal se partiria al final de una
+// pagina y dejaria su pie huerfano en la siguiente. El area de texto la fija el
+// paquete (aca no hay variables de margen), asi que se aproxima con el 80% del
+// papel: en los tres perfiles el bloque de texto ronda el 80-85%.
+#show figure: it => context {
+  set block(breakable: measure(it.body).height > page.height * 0.8)
+  it
+}
 
 // Encabezados sin silabacion ni justificacion (el titulo del reporte lo maneja el
 // paquete: ver el parche en toffee-tufte lib.typ). El cuerpo si se silabea y

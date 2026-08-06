@@ -668,8 +668,8 @@
     // panduck: esta correccion estaba DENTRO del `if dy == auto`, pero es sobre la
     // posicion horizontal y no tiene nada que ver con dy. Al saltarsela, una nota
     // con dy explicito que caia al final de una linea se colocaba fuera del borde
-    // derecho de la pagina. Se nota con las figuras de margen, que tufte.lua pega
-    // al final del parrafo anterior: quedan siempre al final de una linea.
+    // derecho de la pagina. Las notas con dy explicito son las que coloca
+    // `sidenote-flotante` (toffee-tufte), o sea todas las figuras de margen.
     let is-end-of-line = (
       calc.abs(anchor-x - properties.margin-left - properties.page-width - properties.page-offset-x) < 0.1pt
     )
