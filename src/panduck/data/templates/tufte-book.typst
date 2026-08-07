@@ -47,7 +47,11 @@
 #let margen_sup = $if(top-margin)$$top-margin$$else$1in$endif$
 #let ancho_hoja = $if(paperwidth)$$paperwidth$$else$8.5in$endif$
 #let ancho_texto = ancho_hoja - margen_izq - margen_der
-#let color_acento = rgb($if(accent)$"$accent$"$else$"#A5211F"$endif$)
+// El `accent` del head se limpia de todo lo que no sea hexadecimal antes de
+// armar el color: pandoc escapa el `#` al interpolar el metadato y emite
+// `rgb("\#CF3889")`, que typst rechaza. Asi da lo mismo escribirlo con o sin
+// almohadilla en el YAML.
+#let color_acento = rgb("#" + $if(accent)$"$accent$"$else$"#A5211F"$endif$.replace(regex("[^0-9A-Fa-f]"), ""))
 
 #set document(title: "$title$"$if(author)$, author: ($for(author)$"$author$",$endfor$)$endif$)
 #fullwidth.update(es_full)
