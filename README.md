@@ -92,6 +92,14 @@ Como `class` es un atributo válido de graphviz, el mismo fuente se puede compil
 
 ## Perfiles
 
+![Primera página del ejemplo de cada perfil](docs/perfiles.png)
+
+La imagen la genera `scripts/montaje-perfiles.py`, que compila el ejemplo de cada perfil y arma la grilla. Conviene regenerarla al tocar una plantilla:
+
+```bash
+python scripts/montaje-perfiles.py -o docs/perfiles.png
+```
+
 | Perfil | Descripción |
 |---|---|
 | `default` | Template default de pandoc, xelatex, crossref + citeproc. La apariencia se controla desde `head.yaml` (geometry, fonts, etc.). |
@@ -104,7 +112,6 @@ Como `class` es un atributo válido de graphviz, el mismo fuente se puede compil
 | `slides` (`typst`)| Slides académicas en PDF vía typst (rápido, sin LaTeX), con tema azul marino + magenta sobre blanco (inspirado en Metropolis). `##` = slide, `#` = slide de sección. Opciones por slide como atributos de clase: `{.center}`, `{.smaller}`, `{.image}` (foco en imagen, a sangre), `{.quote}` (cita: texto grande con barra de acento a la izquierda; sin cursiva automática, se elige qué va en `*cursiva*`), `{.statement}` (declaración: fondo navy, texto grande centrado en blanco, frase clave en `**negrita**` resaltada en acento), `{.end image="x.png"}` (slide de cierre con imagen opcional), `{background="#1b3b6f"}`, dos columnas con grosor (`width=`), alineación por bloque o columna (`::: left` / `::: right` / `::: center`, o esas clases sobre una `.column`) y diagramas Graphviz (` ```{.dot} `). Citas con `>` estilizadas como cita (barra de acento, tipografía de citas y cursiva). Texto inline a otro tamaño o estilo con las clases compartidas (ver "Estilos de texto": `.small`, `.large`, `.sc`, etc.; las versalitas son sintéticas, sirven aunque la fuente no traiga la feature smcp). Callouts con divs `::: warning` / `::: theorem` / `::: prompt` ... (tipos `note`, `tip`, `warning`, `alert`/`important`, `theorem`, `definition`, `prompt`, `callout`; `title=` sobreescribe la etiqueta; `prompt` usa monofont). Notas al pie para referencias (legibles también sobre slides de fondo oscuro). Tablas con encabezado estilizado (primera fila con fondo tenue y negrita). Footer `x / total`. Portada con `title-image` (y `title-image-credit`, crédito vertical a un costado de la imagen), `logos` (lista), `affiliation` (una o varias) y `venue`. Tipografía configurable en `head.yaml`: `mainfont`, `quotefont` (citas), `monofont` (código y prompts, default Fira Code a 0.9em); tamaños `logo-height`, `end-image-height`. `fontsize` (default 22pt) escala el deck completo: títulos de slide, texto reducido de `{.smaller}` y `{.image}`, pies de figura y notas al pie se derivan de él. Los pies de figura van del porte del deck y los enlaces salen subrayados en todo el deck (cuerpo, pies y notas al pie). Requiere `typst` (`sudo snap install typst`). |
 | `paper` | Paper académico genérico (working paper). Compila a PDF (clase `article` con line numbers y pie de página vía `header-includes`) y a docx con un reference-doc de Word estilizado (cuerpo Times New Roman, interlineado 1.5). |
 | `dcc-informe` | Informe E o memoria del DCC (U. de Chile), clase `umemoria` con portada institucional, capítulos como nivel 1 de Markdown y bibliografía ACM. |
-| `beamer` | Slides en beamer con el tema por defecto de LaTeX, sin plantilla propia. Queda como salida alternativa: para presentaciones se usa `slides`, que compila mucho más rápido. |
 | `instagram` (`typst`) | Carruseles de Instagram en PDF y una PNG por post (256 dpi por defecto). Cada `#` es un post (página vertical 4:5, configurable). Opciones por post como atributos del encabezado: `{background-image="bg.png"}` (imagen cover), `{pagecolor="1b3b6f"}`, `{textcolor="ffffff"}`, `{fontsize="11pt"}`, `{.top}`, `{.left}`. Color de texto por contraste automático (claro/oscuro) si no se fija. Imagen circular (`.circle`), columnas, y los estilos de texto compartidos (`.LARGE`, `.sc`, `.sff`, ...; ver "Estilos de texto"). Pie común con iconos FontAwesome (`:instagram:`, `:globe:`, ...) y número de post. `mainfont`/`sansfont` configurables en `head.yaml`. Requiere `typst` e ImageMagick (`convert`). |
 
 ## Configuración por documento

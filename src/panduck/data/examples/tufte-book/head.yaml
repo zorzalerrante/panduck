@@ -1,0 +1,52 @@
+---
+title: "{{titulo}}"
+subtitle: "{{subtitulo}}"
+author:
+  - "{{autor}}"
+date: "{{fecha}}"
+bibliography: references.bib
+csl: apa-6th-edition.csl
+
+# Tipografia. El nombre es el que ve typst (revisar con `typst fonts`), no el de
+# fontconfig; aca van dos fuentes presentes en cualquier maquina.
+mainfont: "Liberation Serif"
+monofont: "Liberation Mono"
+fontsize: 10pt
+
+# Indice al inicio. toc-depth lo fija pandoc en 3 (hasta subsecciones); con 2
+# el indice llega hasta las secciones. En el libro los niveles son capitulo=1,
+# seccion=2, subseccion=3.
+toc: true
+toc-depth: 2
+
+# Margen superior de la pagina. La plantilla lo usa ademas como limite hasta
+# donde puede subir una figura de margen que flota.
+top-margin: 1in
+
+# Cuanto puede subir una figura de margen cuando el margen esta libre sobre
+# ella. En 0pt se queda en la linea exacta donde se declaro.
+margin-float-up: 6em
+
+# Alto maximo de una imagen de margen. Conviene holgado: recortar por altura
+# obliga a soltar el ancho, asi que una figura alta sale mas angosta.
+margin-image-height: 6cm
+
+# Color de acento: numero de capitulo, reglas y etiqueta de las partes.
+accent: "A5211F"
+
+# Etiqueta de las paginas de parte ("Parte I", "Unidad I", ...).
+part-label: "Parte"
+
+# Numeracion por capitulo (Figura 2.1, Tabla 3.2). Sin `chapters` crossref
+# numera corrido en todo el libro.
+chapters: true
+
+# Prefijos de pandoc-crossref en castellano. La numeracion es por capitulo
+# (Figura 2.1), asi que el prefijo se escribe a mano y la referencia va con el
+# prefijo suprimido: `[-@fig:x]`.
+figureTitle: "Figura"
+tableTitle: "Tabla"
+figPrefix: "Figura"
+tblPrefix: "Tabla"
+eqnPrefix: "Ecuación"
+---
