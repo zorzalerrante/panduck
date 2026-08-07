@@ -16,6 +16,6 @@ csl: ieee.csl
 # quotefont: "Liberation Serif"
 # monofont: "Fira Code"
 # Tamaños (opcional): logo-height: 1.4cm | end-image-height: 5cm
-# Tema azul marino + magenta por defecto; accent se puede sobreescribir (pero
-# el # por variable rompe typst, asi que conviene dejar el default).
+# Tema azul marino + magenta por defecto. El color de acento se cambia con
+# accent (con o sin almohadilla: accent: "1F4E79" o accent: "#1F4E79").
 ---

@@ -28,7 +28,11 @@
 // ---- Tema CENIA (inspirado en Metropolis) -----------------------------------
 
 #let mdark = rgb("#0A0E50")        // azul marino: titulos, texto, fondo de seccion
-#let accent = $if(accent)$rgb("$accent$")$else$rgb("#CF3889")$endif$  // magenta CENIA de acento
+// El `accent` del head se limpia de todo lo que no sea hexadecimal antes de
+// armar el color: pandoc escapa el `#` al interpolar el metadato y emite
+// `rgb("\#CF3889")`, que typst rechaza. Asi da lo mismo escribirlo con o sin
+// almohadilla en el YAML (mismo tratamiento que en tufte-book).
+#let accent = rgb("#" + $if(accent)$"$accent$"$else$"#CF3889"$endif$.replace(regex("[^0-9A-Fa-f]"), ""))  // magenta CENIA de acento
 #let footer-text = [$if(footer)$$footer$$else$$if(title)$$title$$endif$$endif$]
 #let base-margin = (x: 1.3cm, top: 1.0cm, bottom: 0.85cm)
 // tamanos configurables desde head.yaml (longitudes, sin # ni _, no sufren escape)
