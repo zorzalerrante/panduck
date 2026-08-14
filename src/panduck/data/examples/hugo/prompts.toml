@@ -1,0 +1,12 @@
+# Campos que `panduck init hugo` pregunta al crear el post. Cada clave
+# corresponde a un marcador {{clave}} en head.yaml. Este archivo no se copia al
+# directorio del usuario.
+[[prompts]]
+key = "titulo"
+question = "Titulo del post"
+default = "Titulo del post"
+
+[[prompts]]
+key = "fecha"
+question = "Fecha (ISO, como la quiere Hugo)"
+default = "2026-08-12"

@@ -1,0 +1,38 @@
+# Post de Hugo: markdown academico (con citas, crossref y diagramas) a markdown
+# renderizado. El writer es gfm porque Goldmark, el motor de Hugo, es GFM mas
+# extensiones; `markdown` y `commonmark_x` emiten los divs de citeproc como
+# `:::`, que Goldmark muestra literal.
+# El subcomando `panduck hugo` (ver cli.py) es el que arma el page bundle:
+# corre este perfil, copia las imagenes junto al index.md y reescribe sus rutas.
+from: markdown+smart+citations
+to: gfm
+wrap: none  # el markdown de salida lo lee Hugo, no una persona: sin cortes de linea
+standalone: true
+template: hugo.md
+# En un documento academico el nivel 1 son las secciones, pero en un post el h1
+# es el titulo de la pagina: sin correr los niveles, una seccion competiria con
+# el. Por eso el cuerpo se escribe con `#` como en cualquier documento panduck y
+# el post sale con `##`. Un documento que ya venga escrito para la web (con `##`)
+# se compila con `--shift-heading-level-by=0`.
+shift-heading-level-by: 1
+filters:
+  # diagramas escritos en el documento (```{.dot}); en markdown salen como SVG
+  - graphviz.lua
+  # numeracion y referencias cruzadas: el post dice "la Figura 1" con el mismo
+  # `[-@fig:x]` que el PDF
+  - pandoc-crossref
+  - citeproc
+  # post-citeproc: bibliografia a lista, figuras a markdown con title (el hook
+  # del tema las convierte en figure+figcaption) y matematica inline a \(...\)
+  - hugo-post.lua
+  # estilos inline por clases pfa-*; en gfm solo sobreviven los que existen en
+  # markdown (negrita, cursiva, tachado), el resto se descarta sin romper nada
+  - fonts-and-alignment.lua
+metadata:
+  # los prefijos de crossref en castellano, como en el resto de los perfiles
+  figureTitle: "Figura"
+  tableTitle: "Tabla"
+  figPrefix: "Figura"
+  tblPrefix: "Tabla"
+  eqnPrefix: "Ecuacion"
+  secPrefix: "Seccion"

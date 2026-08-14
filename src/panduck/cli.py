@@ -239,6 +239,53 @@ def cmd_dist(args, extra):
     print(f"[panduck] listo: {out}")
 
 
+def cmd_hugo(args, extra):
+    """Convierte el documento en un post de Hugo (page bundle).
+
+    Un post de Hugo con imagenes es un directorio con `index.md` y los archivos
+    al lado, referenciados por nombre. Aqui se compila el markdown con el perfil
+    `hugo` (citas renderizadas, diagramas rasterizados, figuras como markdown) y
+    se copian las imagenes al bundle reescribiendo sus rutas, igual que hace
+    `dist` con el .tex de una submission.
+    """
+    args.profile = args.profile if args.profile != "default" else "hugo"
+    cmd, sources = base_command(args, extra)
+    slug = args.slug or next(s.stem for s in sources if s.suffix == ".md")
+    bundle = Path(args.output or ".") / slug
+    bundle.mkdir(parents=True, exist_ok=True)
+    out = bundle / "index.md"
+    run(cmd + ["-o", out])
+
+    md = out.read_text()
+    # las rutas salen del markdown ya escrito, asi que entran tanto las imagenes
+    # del documento como los diagramas que dejo graphviz.lua en el directorio
+    usados = {}
+    for img in sorted(set(re.findall(r"\(([^()\s]+\.(?:svg|png|jpe?g|gif|webp))", md))):
+        src = Path(img)
+        if not src.exists():
+            print(f"[panduck] aviso: no encontre {img}", file=sys.stderr)
+            continue
+        # _dot_<hash>.svg es el nombre de trabajo de graphviz.lua; en el bundle,
+        # que es parte del sitio, va con un nombre legible
+        nombre = src.name.replace("_dot_", "diagrama-", 1).lstrip("_")
+        # el bundle es plano, asi que dos imagenes de carpetas distintas con el
+        # mismo nombre se pisarian; renombrar a mano es decision del autor
+        if nombre in usados:
+            print(f"[panduck] aviso: {img} y {usados[nombre]} comparten el nombre "
+                  f"{nombre} en el bundle; renombra una de las dos", file=sys.stderr)
+        usados[nombre] = img
+        shutil.copy(src, bundle / nombre)
+        md = md.replace(img, nombre)
+        print(f"[panduck] imagen: {img} -> {bundle / nombre}")
+    out.write_text(md)
+    # sin fecha en el front matter, Hugo publica el post sin fecha y las listas
+    # ordenadas por fecha lo dejan al final
+    if not re.search(r"^date:", md, re.M):
+        print("[panduck] aviso: el post no tiene `date:`; agregalo al head.yaml",
+              file=sys.stderr)
+    print(f"[panduck] listo: {out}")
+
+
 def cmd_from_template(name, args):
     """Genera titlepage o cover-letter en docx a partir de head.yaml.
 
@@ -354,6 +401,13 @@ def main():
     add_common(p_dist)
     p_dist.add_argument("--dir", default="dist", help="directorio de salida")
 
+    p_hugo = sub.add_parser("hugo", help="convierte el documento en un post de Hugo")
+    add_common(p_hugo)
+    p_hugo.add_argument("-o", "--output",
+                        help="directorio donde crear el bundle (default: el actual); "
+                             "apuntalo a content/<seccion>/ del sitio para escribir ahi")
+    p_hugo.add_argument("--slug", help="nombre del bundle (default: el del .md)")
+
     for name in ("titlepage", "cover-letter", "highlights"):
         p = sub.add_parser(name, help=f"genera {name}.docx desde head.yaml")
         p.add_argument("-m", "--metadata", default="head.yaml")
@@ -371,6 +425,8 @@ def main():
         cmd_build(args, extra)
     elif args.command == "dist":
         cmd_dist(args, extra)
+    elif args.command == "hugo":
+        cmd_hugo(args, extra)
     elif args.command == "init":
         cmd_init(args)
     elif args.command == "profiles":

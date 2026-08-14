@@ -23,6 +23,8 @@ panduck build -t tex              # main.tex standalone
 panduck build datos_head.yaml datos.md  # fuentes explicitas (metadata primero)
 panduck build documento.md        # archivo unico, con el front matter dentro del md
 panduck dist -p elsevier          # empaqueta tex + imagenes en dist/ para submission
+panduck hugo                      # post de Hugo: main/index.md + las imagenes al lado
+panduck hugo -o ~/sitio/content/bitacora --slug mi-post   # crea el bundle en el sitio
 panduck titlepage                 # titlepage.docx desde head.yaml
 panduck cover-letter              # cover-letter.docx desde head.yaml
 panduck build -p instagram        # carrusel de Instagram: PDF + una PNG por post
@@ -69,7 +71,7 @@ Es opt-in por clase (no afecta documentos que no las usan). En typst las familia
 
 ## Diagramas de Graphviz
 
-Un bloque de código con clase `.dot` (o `.graphviz`) se dibuja al compilar y se inserta como imagen, en todos los perfiles. Con `caption` sale como figura numerada por crossref y sin pie como imagen centrada. Atributos: `width` (80% por defecto), `height`, `engine` (`dot`, `neato`, `circo`, `fdp`, `sfdp`, `twopi`, `osage`) y `caption`. El formato lo elige el writer: SVG en typst, PDF en LaTeX, PNG en docx.
+Un bloque de código con clase `.dot` (o `.graphviz`) se dibuja al compilar y se inserta como imagen, en todos los perfiles. Con `caption` sale como figura numerada por crossref y sin pie como imagen centrada. Atributos: `width` (80% por defecto), `height`, `engine` (`dot`, `neato`, `circo`, `fdp`, `sfdp`, `twopi`, `osage`) y `caption`. El formato lo elige el writer: SVG en typst, PDF en LaTeX, PNG en docx y, en los writers de markdown (el perfil `hugo`), PNG a 200 dpi sobre fondo claro, para que el diagrama se lea igual en un sitio con modo oscuro. Se cambia con `dot-format` en el `head.yaml` o `format=` en el bloque (`png`, `svg`, `pdf`, `mermaid`), más `dot-canvas` (fondo del lienzo, default `#faf8f5`) y `dot-dpi` (default 200). Con `format=mermaid` el diagrama sale como bloque mermaid y lo dibuja el navegador, heredando la tipografía y el modo oscuro del sitio; cubre los grafos con `rankdir`, aristas, `label` y `class`, y avisa y cae a imagen con lo demás (subgrafos, formas, `node [...]` a mitad del grafo).
 
 El diagrama toma la tipografía y los colores del documento sin declararlos, y hay tres estilos de nodo que se marcan con `class`:
 
@@ -113,6 +115,7 @@ python scripts/montaje-perfiles.py -o docs/perfiles.png
 | `paper` | Paper académico genérico (working paper). Compila a PDF (clase `article` con line numbers y pie de página vía `header-includes`) y a docx con un reference-doc de Word estilizado (cuerpo Times New Roman, interlineado 1.5). |
 | `dcc-informe` | Informe E o memoria del DCC (U. de Chile), clase `umemoria` con portada institucional, capítulos como nivel 1 de Markdown y bibliografía ACM. |
 | `instagram` (`typst`) | Carruseles de Instagram en PDF y una PNG por post (256 dpi por defecto). Cada `#` es un post (página vertical 4:5, configurable). Opciones por post como atributos del encabezado: `{background-image="bg.png"}` (imagen cover), `{background-dim="0.35"}` (velo negro sobre esa imagen, 0 a 1), `{pagecolor="1b3b6f"}`, `{textcolor="ffffff"}`, `{fontsize="11pt"}`, `{.top}`, `{.left}`. Color de texto por contraste automático (claro/oscuro) si no se fija, medido contra el fondo ya oscurecido. Imagen circular (`.circle`), imagen con sombra difusa (`.sombra`, con `sombra-color`/`-opacidad`/`-radio`/`-dx`/`-dy`, también sobre una fila entera), columnas, alineación de un bloque con `::: {.left}` / `.center` / `.right` (o de una imagen con esas mismas clases) y los estilos de texto compartidos (`.LARGE`, `.sc`, `.sff`, ...; ver "Estilos de texto"). Pie y cabecera comunes, o propios de un post con `{footer="..."}`, con iconos FontAwesome (`:instagram:`, `:globe:`, ...), markdown (negrita, enlaces) y fórmulas, más el número de post. `mainfont`/`sansfont` configurables en `head.yaml`. Requiere `typst` e ImageMagick (`convert`). |
+| `hugo` (`gfm`) | Post de un sitio [Hugo](https://gohugo.io): markdown académico a markdown renderizado. Las citas se resuelven con el CSL y la bibliografía queda como lista, las referencias cruzadas quedan numeradas ("la Figura 1"), los diagramas Graphviz salen como PNG a 200 dpi con fondo claro (legibles también en modo oscuro; con `format=mermaid` salen como bloque mermaid y los dibuja el navegador) y las figuras salen como `![alt](img "pie")`, que es lo que espera el render hook de imágenes de Hugo para armar `figure` + `figcaption`. La matemática usa los delimitadores de la extensión `passthrough` de Goldmark. Los encabezados bajan un nivel (el `h1` de la página es el título del post, así que el cuerpo se escribe con `#` y sale con `##`). El front matter sale de `title`, `date`, `tags` (o `keywords`), `toc`, `draft` y `thumbnail`, más lo que se ponga bajo `hugo:` en el `head.yaml`, que se copia tal cual. Se compila con `panduck hugo` (no `build`), que arma el page bundle: `<slug>/index.md` con las imágenes al lado. |
 
 ## Configuración por documento
 

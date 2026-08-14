@@ -21,7 +21,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-# perfil -> ejemplo de `panduck init` que se compila con el
+# perfil -> ejemplo de `panduck init` que se compila con el. `hugo` queda fuera:
+# escribe markdown para un sitio estatico, no un PDF que rasterizar.
 PERFILES = {
     "default": "documento",
     "documento": "documento",
