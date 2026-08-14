@@ -126,6 +126,7 @@
   panorama-i: 0,
   panorama-x: 50%,
   panorama-y: 50%,
+  background-dim: 0,
   textcolor: rgb("#2d2d2d"),
   fontsize: none,
   leading: none,
@@ -144,10 +145,23 @@
     width: _w, height: _h,
     margin: if margin != none { margin } else { _margin },
     fill: if pagecolor != none { pagecolor } else { white },
-    background: if panorama-path != none {
-      _panorama(panorama-path, panorama-n, panorama-i, x: panorama-x, y: panorama-y)
-    } else if image-path != none {
-      image(image-path, width: 100%, height: 100%, fit: "cover")
+    background: if panorama-path != none or image-path != none {
+      // el velo va encima del fondo y debajo del contenido, asi que se apila
+      // aqui mismo; con dim 0 no se dibuja nada
+      let fondo = if panorama-path != none {
+        _panorama(panorama-path, panorama-n, panorama-i, x: panorama-x, y: panorama-y)
+      } else {
+        image(image-path, width: 100%, height: 100%, fit: "cover")
+      }
+      block(width: 100%, height: 100%, {
+        place(top + left, fondo)
+        if background-dim > 0 {
+          place(top + left, rect(
+            width: 100%, height: 100%, stroke: none,
+            fill: black.transparentize(100% - background-dim * 100%),
+          ))
+        }
+      })
     },
     header: if show-header and marca(header, _header) != [] {
       set text(size: 0.72em, fill: textcolor)
@@ -164,6 +178,10 @@
     },
   )[
     #set text(fill: textcolor, size: if fontsize != none { fontsize } else { _fontsize })
+    // el trazo de tablas y reglas es negro por defecto, o sea invisible sobre un
+    // fondo oscuro: sigue al color de texto, que ya viene resuelto por contraste
+    #set table(stroke: textcolor)
+    #set line(stroke: textcolor)
     #set par(leading: if leading != none { leading } else { _leading })
     #align(_H.at(halign) + _V.at(valign))[#body]
   ]

@@ -17,6 +17,9 @@ mainfont: "Liberation Sans"
 pagecolor: "f4efe6"
 # textcolor: "2d2d2d"
 # background-image: bg.png
+# Velo negro sobre la imagen de fondo, 0 a 1, para que el texto despegue de una
+# foto con detalle. Entra en el calculo de contraste del color de texto.
+# background-dim: 0.35
 # Pie comun a todos los posts. Acepta iconos FontAwesome como shortcodes
 # (:instagram: :globe: :envelope: :twitter: :youtube: ...). El numero de post
 # (n / total) se agrega al borde contrario de la marca; se apaga con

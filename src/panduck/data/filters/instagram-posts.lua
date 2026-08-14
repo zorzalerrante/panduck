@@ -3,6 +3,8 @@
 -- opciones por post desde los atributos del encabezado y resuelve el color de
 -- texto por contraste (claro/oscuro) segun el fondo:
 --   # {background-image="bg.png"}   imagen de fondo (cubre la pagina)
+--   # {background-dim="0.35"}       velo negro sobre esa imagen, 0 a 1, para que
+--                                   el texto despegue de una foto con detalle
 --   # {pagecolor="1b3b6f"}          color de fondo
 --   # {textcolor="ffffff"}          color de texto explicito (si no, se elige solo)
 --   # {.top}                        no centrar verticalmente (alinear arriba)
@@ -10,10 +12,15 @@
 --   # {panorama="foto.jpg"}         franja de una foto ancha; los posts seguidos
 --                                   que declaren la misma se la reparten, y
 --                                   panorama-x / panorama-y fijan el encuadre
+--   # {footer="..."}                pie propio de ese post, en vez del general;
+--                                   acepta iconos :nombre: y formulas ($\cdot$)
 --   # {.nofooter}                    ese post va sin pie (marca ni numero)
 -- Los mismos valores a nivel documento (head.yaml) son los defaults de cada post.
+-- La alineacion del encabezado vale para el post entero; para un bloque suelto
+-- (titulo centrado y bajada a la izquierda) va ::: {.left} / .center / .right.
 -- Ademas traduce columnas (::: columns), filas de imagenes (::: row, con gap
--- negativo para traslaparlas), imagenes (ancho %, .circle) y spans con clases de
+-- negativo para traslaparlas), imagenes (ancho %, .circle, .left/.right y .sombra,
+-- que acepta sombra-color/-opacidad/-radio/-dx/-dy) y spans con clases de
 -- tamano/estilo. Emite typst envolviendo el contenido entre RawBlocks.
 
 local utils = pandoc.utils
@@ -130,24 +137,56 @@ local function typ_escape(t)
   return (t:gsub("([\\#%[%]%*_@`<$~])", "\\%1"))
 end
 
--- texto del footer (con shortcodes) -> typst crudo: iconos como #text(font:..) y
--- el resto escapado para que @, #, *, etc. no se interpreten como markup
-local function footer_to_typst(s)
-  local out, i = {}, 1
+-- Un shortcode viaja dentro de un Str; se parte el texto para dejar el icono
+-- como typst crudo y conservar lo que lo rodea.
+local function str_con_iconos(el)
+  if not el.text:find(":[%w%-]+:") then return nil end
+  local out, i = pandoc.Inlines({}), 1
   while true do
-    local a, b, name = s:find(":([%w%-]+):", i)
+    local a, b, name = el.text:find(":([%w%-]+):", i)
     if not a then
-      out[#out + 1] = typ_escape(s:sub(i))
+      if i <= #el.text then out:insert(pandoc.Str(el.text:sub(i))) end
       break
     end
-    if a > i then out[#out + 1] = typ_escape(s:sub(i, a - 1)) end
+    if a > i then out:insert(pandoc.Str(el.text:sub(i, a - 1))) end
     local code = FA[name]
-    out[#out + 1] = code
-      and ('#text(font: "FontAwesome")[\\u{' .. code .. '}]#h(0.3em)')
-      or typ_escape(s:sub(a, b))
+    out:insert(code
+      and pandoc.RawInline("typst",
+        '#text(font: "FontAwesome")[\\u{' .. code .. '}]#h(0.3em)')
+      or pandoc.Str(el.text:sub(a, b))) -- shortcode desconocido: queda tal cual
     i = b + 1
   end
-  return table.concat(out)
+  return out
+end
+
+-- inlines del footer -> typst crudo. Los iconos salen del mapa FA por su
+-- shortcode y el resto lo escribe el propio pandoc, que ya escapa @, #, * donde
+-- corresponde. Asi el pie admite lo mismo que el cuerpo: negrita, cursiva,
+-- versalitas y formulas ($\cdot$, el separador de siempre).
+local function inlines_to_typst(inls)
+  local ok, typ = pcall(function()
+    local con_iconos = pandoc.Inlines(inls):walk({ Str = str_con_iconos })
+    return pandoc.write(pandoc.Pandoc({ pandoc.Plain(con_iconos) }), "typst")
+  end)
+  return ok and (typ:gsub("%s+$", "")) or typ_escape(utils.stringify(inls))
+end
+
+-- Desde el atributo de un encabezado el footer llega como cadena cruda, asi que
+-- se lee como markdown antes de convertir. Sin citations, para que una arroba
+-- de red social (@trazos.de.aves) no se lea como cita bibliografica.
+local function footer_to_typst(s)
+  local ok, inls = pcall(function()
+    local doc = pandoc.read(s, "markdown-citations-raw_tex-raw_html")
+    return doc.blocks[1] and doc.blocks[1].content or pandoc.Inlines({})
+  end)
+  return inlines_to_typst(ok and inls or pandoc.Inlines({ pandoc.Str(s) }))
+end
+
+-- Desde el meta (head.yaml) pandoc ya parseo el valor, que llega como inlines;
+-- una cadena pelada solo aparece si vino por --metadata.
+local function meta_to_typst(v)
+  if type(v) == "string" then return footer_to_typst(v) end
+  return inlines_to_typst(v)
 end
 
 -- ---- Opciones por post ------------------------------------------------------
@@ -155,7 +194,22 @@ end
 -- w/h: geometria de la pagina en cm (defaults iguales a los de la plantilla).
 -- Solo se usa la proporcion, para saber que parte de la foto cae en cada franja
 -- de un panorama.
-local meta = { pagecolor = nil, image = nil, textcolor = nil, w = 10, h = 12.5 }
+local meta = { pagecolor = nil, image = nil, textcolor = nil, dim = nil, w = 10, h = 12.5 }
+
+-- Velo oscuro sobre la imagen de fondo, 0 a 1, para que el texto despegue de una
+-- foto con mucho detalle. Se aplica tambien al color dominante con que se elige
+-- el color de texto: si no, un fondo medio seguiria resolviendo a texto oscuro
+-- aunque el velo ya lo dejo oscuro.
+local function dim_valor(s)
+  local v = tonumber(s)
+  if not v then return nil end
+  return math.max(0, math.min(1, v))
+end
+
+local function aplicar_dim(rgb, dim)
+  if not rgb or not dim then return rgb end
+  return { rgb[1] * (1 - dim), rgb[2] * (1 - dim), rgb[3] * (1 - dim) }
+end
 
 local UNIT = { cm = 1, mm = 0.1, ["in"] = 2.54, pt = 2.54 / 72, px = 2.54 / 96 }
 
@@ -200,9 +254,13 @@ local function post_opts(attr, span)
   elseif image then
     fondo = image_dominant(image)
   end
-  local resolved = resolve_textcolor(tc, pagecolor, fondo)
+  -- el velo solo tiene sentido sobre una imagen; sobre un pagecolor se cambia el color
+  local dim = dim_valor((attr and attr.attributes["background-dim"]) or meta.dim)
+  if dim == 0 then dim = nil end
+  local resolved = resolve_textcolor(tc, pagecolor, aplicar_dim(fondo, dim))
   local o = {}
   if pagecolor then o[#o + 1] = "pagecolor: " .. rgb_lit(pagecolor) end
+  if dim and (image or span) then o[#o + 1] = "background-dim: " .. dim end
   if span then
     o[#o + 1] = 'panorama-path: "' .. span.path .. '"'
     o[#o + 1] = "panorama-n: " .. span.n
@@ -238,8 +296,31 @@ end
 
 -- ---- Traducciones de contenido (corren antes de la particion) ---------------
 
--- Columnas: ::: columns con ::: {.column width="50%"} -> #grid
+-- Alineacion de un bloque suelto: ::: {.left} / .center / .right. La del
+-- encabezado alinea el post entero, asi que esto es para el caso de un titulo
+-- centrado con la bajada a la izquierda, o al reves. Pandoc no deja anotar un
+-- parrafo, por eso va como div.
+local BLOQUE_ALIGN = { left = "left", center = "center", right = "right",
+                       izquierda = "left", centro = "center", derecha = "right" }
+
+local function align_of(classes)
+  for _, c in ipairs(classes) do
+    if BLOQUE_ALIGN[c] then return BLOQUE_ALIGN[c] end
+  end
+end
+
 function Div(el)
+  -- Las columnas (.column) las alinea el grid padre, no aqui: el filtro corre de
+  -- adentro hacia afuera, asi que envolverlas aqui les quitaria la clase y el
+  -- padre las dejaria fuera del grid, perdiendo su contenido.
+  local al = align_of(el.classes)
+  if al and not el.classes:includes("columns") and not el.classes:includes("column") then
+    local out = { pandoc.RawBlock("typst", "#align(" .. al .. ")[") }
+    for _, b in ipairs(el.content) do out[#out + 1] = b end
+    out[#out + 1] = pandoc.RawBlock("typst", "]")
+    return out
+  end
+  -- Columnas: ::: columns con ::: {.column width="50%"} -> #grid
   if not el.classes:includes("columns") then return nil end
   local widths, cells = {}, {}
   for _, child in ipairs(el.content) do
@@ -251,8 +332,11 @@ function Div(el)
   local out = { pandoc.RawBlock("typst",
     "#grid(columns: (" .. table.concat(widths, ", ") .. "), gutter: 1em,") }
   for i, cell in ipairs(cells) do
+    local ca = align_of(cell.classes)
     out[#out + 1] = pandoc.RawBlock("typst", "[")
+    if ca then out[#out + 1] = pandoc.RawBlock("typst", "#align(" .. ca .. ")[") end
     for _, b in ipairs(cell.content) do out[#out + 1] = b end
+    if ca then out[#out + 1] = pandoc.RawBlock("typst", "]") end
     out[#out + 1] = pandoc.RawBlock("typst", i < #cells and "]," or "]")
   end
   out[#out + 1] = pandoc.RawBlock("typst", ")")
@@ -267,24 +351,98 @@ local function has_class(el, name)
   return a ~= nil and a:find(name, 1, true) ~= nil
 end
 
+-- Sombra difusa de una imagen. Typst no desenfoca, asi que la rasteriza
+-- ImageMagick junto al original y typst solo muestra el PNG con alfa. Sobre
+-- fondo oscuro una sombra negra no se ve: ahi conviene sombra-color con el
+-- color del texto y sin desplazamiento, que funciona como halo.
+local sombras = {}
+
+local function existe(ruta)
+  local fh = io.open(ruta, "rb")
+  if fh then fh:close() end
+  return fh ~= nil
+end
+
+-- El nombre sale del hash de los parametros mas el contenido del original (como
+-- en graphviz.lua), asi la misma sombra reusa el archivo entre compilaciones en
+-- vez de dejar una copia nueva, y una imagen que cambia si regenera la suya.
+local function hash_corto(spec, color, src)
+  local fh = io.open(src, "rb")
+  local datos = fh and fh:read("*a") or ""
+  if fh then fh:close() end
+  return pandoc.utils.sha1(spec .. "\1" .. color .. "\1" .. datos):sub(1, 8)
+end
+
+-- src y atributos pueden venir de una imagen suelta o de una pieza de fila, por
+-- eso recibe una tabla con esos dos campos y no el elemento pandoc entero.
+local function con_sombra(el)
+  local at = el.attributes
+  local spec = string.format("%sx%s+%s+%s",
+    at["sombra-opacidad"] or "70", at["sombra-radio"] or "12",
+    at["sombra-dx"] or "0", at["sombra-dy"] or "8")
+  -- el hex va con numeral para ImageMagick, que si no lo toma como nombre de
+  -- color, no encuentra ninguno y sigue con el suyo por defecto (solo avisa).
+  -- En el resto del perfil (pagecolor, textcolor) el numeral es opcional.
+  local color = at["sombra-color"] or "black"
+  if color:match("^%x%x%x$") or color:match("^%x%x%x%x%x%x$") then color = "#" .. color end
+
+  local clave = el.src .. "\1" .. spec .. "\1" .. color
+  if sombras[clave] then return sombras[clave] end
+
+  local salida = el.src:gsub("%.%w+$", "")
+    .. "-sombra-" .. hash_corto(spec, color, el.src) .. ".png"
+  if not existe(salida) then
+    local ok = pcall(pandoc.pipe, "convert", {
+      el.src, "(", "+clone", "-background", color, "-shadow", spec, ")",
+      "+swap", "-background", "none", "-layers", "merge", "+repage", salida,
+    }, "")
+    if not ok then
+      io.stderr:write("[instagram] no pude generar la sombra de " .. el.src .. "\n")
+      return el.src
+    end
+  end
+  sombras[clave] = salida
+  return salida
+end
+
+-- La sombra se pide en la imagen o en el div que la contiene (una fila entera
+-- con .sombra), y los parametros del div valen de default para sus imagenes.
+local function pide_sombra(el)
+  return has_class(el, "sombra") or has_class(el, "shadow")
+end
+
+local function sombra_heredada(img, div)
+  local at = {}
+  for k, v in pairs(div and div.attributes or {}) do at[k] = v end
+  for k, v in pairs(img.attributes) do at[k] = v end
+  return con_sombra({ src = img.src, attributes = at })
+end
+
 -- ---- Filas de imagenes (primera pasada, ver el return del final) ------------
 
 -- ::: row / ::: fila -> #row(...). Las imagenes de adentro se pasan como piezas
 -- en vez de emitirse sueltas, asi que este handler corre en una pasada previa,
 -- antes de que Image las convierta.
-local function row_piece(img)
+local function row_piece(img, div)
   -- el % del width/height de la imagen escala esa pieza dentro de la fila
   local pct = (img.attributes["height"] or img.attributes["width"] or "")
     :match("^(%d+%.?%d*)%%$")
+  local circulo = has_class(img, "circle")
+  local src = img.src
+  -- el recorte circular lo hace la plantilla sobre la imagen ya compuesta, asi
+  -- que la sombra quedaria cortada adentro del circulo
+  if (pide_sombra(img) or (div and pide_sombra(div))) and not circulo then
+    src = sombra_heredada(img, div)
+  end
   return string.format('(path: "%s", circle: %s, factor: %s)',
-    img.src, has_class(img, "circle") and "true" or "false",
+    src, circulo and "true" or "false",
     pct and tostring(tonumber(pct) / 100) or "none")
 end
 
 local function row_div(el)
   if not (el.classes:includes("row") or el.classes:includes("fila")) then return nil end
   local pieces = {}
-  el:walk({ Image = function(img) pieces[#pieces + 1] = row_piece(img) end })
+  el:walk({ Image = function(img) pieces[#pieces + 1] = row_piece(img, el) end })
   if #pieces == 0 then return nil end
   local opts = { "gap: " .. (el.attributes["gap"] or "0.4em") }
   -- height iguala las alturas; sin height, las columnas reparten el ancho
@@ -294,27 +452,45 @@ local function row_div(el)
     "#row(" .. table.concat(opts, ", ") .. ", " .. table.concat(pieces, ", ") .. ")")
 end
 
+-- Alineacion horizontal de una imagen: centrada salvo que traiga .left o
+-- .right, para que pueda acompanar a un post con {.left}.
+local function img_align(el)
+  if has_class(el, "left") then return "left" end
+  if has_class(el, "right") then return "right" end
+  return "center"
+end
+
 -- Imagenes: ancho/alto en % y recorte circular con .circle
 function Image(el)
   local src = el.src
+  local al = img_align(el)
+  if pide_sombra(el) then
+    -- el recorte circular lo hace typst sobre la imagen ya compuesta, asi que
+    -- la sombra quedaria cortada adentro del circulo
+    if has_class(el, "circle") then
+      io.stderr:write("[instagram] .sombra no se combina con .circle: " .. src .. "\n")
+    else
+      src = con_sombra(el)
+    end
+  end
   if has_class(el, "circle") then
     local size = el.attributes["width"] or "50%"
     local pct = size:match("^(%d+%.?%d*)%%$")
     if pct then
       local f = tonumber(pct) / 100
       return pandoc.RawInline("typst",
-        '#align(center)[#layout(s => box(clip: true, radius: 50%, width: s.width * ' .. f ..
+        '#align(' .. al .. ')[#layout(s => box(clip: true, radius: 50%, width: s.width * ' .. f ..
         ', height: s.width * ' .. f .. ', image("' .. src .. '", width: 100%, height: 100%, fit: "cover")))]')
     end
     return pandoc.RawInline("typst",
-      '#align(center)[#box(clip: true, radius: 50%, width: ' .. size .. ', height: ' .. size ..
+      '#align(' .. al .. ')[#box(clip: true, radius: 50%, width: ' .. size .. ', height: ' .. size ..
       ', image("' .. src .. '", width: 100%, height: 100%, fit: "cover"))]')
   end
   local opts = {}
   if el.attributes["width"] then opts[#opts + 1] = "width: " .. el.attributes["width"] end
   if el.attributes["height"] then opts[#opts + 1] = "height: " .. el.attributes["height"] end
   local optstr = #opts > 0 and (", " .. table.concat(opts, ", ")) or ""
-  return pandoc.RawInline("typst", '#align(center)[#image("' .. src .. '"' .. optstr .. ')]')
+  return pandoc.RawInline("typst", '#align(' .. al .. ')[#image("' .. src .. '"' .. optstr .. ')]')
 end
 
 -- Los estilos inline de texto (tamano .small/.large/.LARGE/..., versalitas
@@ -330,6 +506,7 @@ function Pandoc(doc)
   meta.pagecolor = doc.meta.pagecolor and utils.stringify(doc.meta.pagecolor) or nil
   meta.image = doc.meta["background-image"] and utils.stringify(doc.meta["background-image"]) or nil
   meta.textcolor = doc.meta.textcolor and utils.stringify(doc.meta.textcolor) or nil
+  meta.dim = doc.meta["background-dim"] and utils.stringify(doc.meta["background-dim"]) or nil
   meta.w = (doc.meta.width and to_cm(utils.stringify(doc.meta.width))) or meta.w
   meta.h = (doc.meta.height and to_cm(utils.stringify(doc.meta.height))) or meta.h
 
@@ -337,7 +514,7 @@ function Pandoc(doc)
   for _, k in ipairs({ "header", "footer" }) do
     if doc.meta[k] then
       doc.meta[k] = pandoc.MetaInlines({
-        pandoc.RawInline("typst", footer_to_typst(utils.stringify(doc.meta[k]))),
+        pandoc.RawInline("typst", meta_to_typst(doc.meta[k])),
       })
     end
   end
