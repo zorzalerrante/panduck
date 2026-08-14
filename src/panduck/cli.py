@@ -255,7 +255,13 @@ def cmd_from_template(name, args):
         [pandoc_bin(), "--wrap=none", "--template", template, meta],
         capture_output=True, text=True,
     ).stdout
-    run([pandoc_bin(), "-f", "markdown", "-o", out], input=filled, text=True)
+    # mismo reference-doc que el perfil paper, para que la portada y la carta
+    # salgan con la tipografia del manuscrito y no con la default de pandoc
+    cmd = [pandoc_bin(), "-f", "markdown", "-o", out]
+    ref = DATA / "reference" / "paper-reference.docx"
+    if ref.exists():
+        cmd += ["--reference-doc", str(ref)]
+    run(cmd, input=filled, text=True)
     print(f"[panduck] listo: {out}")
 
 
