@@ -215,6 +215,13 @@ def cmd_build(args, extra):
         if want_png:
             dpi = args.dpi or default_dpi or 144
             base = out[:-4] if out.endswith(".pdf") else stem
+            # typst rellena el numero con ceros segun el total de paginas, asi que
+            # con otro total la compilacion anterior deja PNG con otros nombres que
+            # nadie pisa y quedan mezcladas con las vigentes
+            nombre = Path(base).name
+            for vieja in Path(base).parent.glob(f"{nombre}-*.png"):
+                if re.fullmatch(re.escape(nombre) + r"-\d+\.png", vieja.name):
+                    vieja.unlink()
             run([typst_bin(), "compile", *typst_args, typ, f"{base}-{{0p}}.png", "--ppi", str(dpi)])
             print(f"[panduck] PNG: {base}-NN.png ({dpi} ppi)")
         return
