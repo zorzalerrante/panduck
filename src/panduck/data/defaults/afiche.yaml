@@ -1,0 +1,27 @@
+# Afiche (poster o flyer) de una pagina en typst: una imagen a sangre en una
+# banda y el resto del papel para el titulo, el subtitulo, quienes presentan, los
+# datos del evento, el QR, los logos y el financiamiento. Todo el contenido sale
+# del head.yaml; el cuerpo del markdown, si lo hay, es la bajada.
+# panduck genera el .typ con pandoc, lo compila a PDF con typst y ademas exporta
+# una PNG (para difundir el afiche por mensajeria o redes). El DPI va aca:
+# panduck-png: 200
+# -citations: un afiche no lleva bibliografia; sin esto un "@cuenta" de una red
+# social se interpretaria como cita de pandoc
+from: markdown+smart-citations
+to: typst
+wrap: none  # no envolver: un nombre de fuente largo partido en 2 lineas rompe el string typst
+standalone: true
+template: afiche
+filters:
+  # normaliza la lista de presentadores y resuelve el logo de la agencia
+  - afiche-meta.lua
+  # diagramas de graphviz escritos en el documento (```{.dot}); va primero de los
+  # compartidos porque la figura tiene que existir antes que los demas filtros
+  - graphviz.lua
+  # estilos inline (tamano/versalitas/peso/familia/color) por clases pfa-*
+  - fonts-and-alignment.lua
+  # rescata el LaTeX crudo que el writer typst descarta sin avisar (\mbox,
+  # \textbf...) y avisa por stderr de lo que no pudo traducir
+  - typst-raw-latex.lua
+  # arregla simbolos math que el writer typst emite con nombres viejos
+  - typst-fix-symbols.lua

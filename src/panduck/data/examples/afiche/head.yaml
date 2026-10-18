@@ -1,0 +1,83 @@
+---
+# Afiche de una pagina: la imagen ocupa una banda a sangre y el resto del papel
+# lleva el titulo, quienes presentan, los datos y los logos. `panduck build -p
+# afiche` produce main.pdf y main-1.png (200 dpi, para difundir por mensajeria).
+papersize: a4
+margin: 1.5cm
+# Todos los tamanos se derivan de fontsize: para un A3 basta subirlo (a 16pt,
+# por ejemplo) sin tocar nada mas.
+fontsize: 11pt
+# El titulo es 3.4 veces el cuerpo y el subtitulo 1.45; se fijan aparte cuando el
+# titulo es largo o cuando se quiere otra proporcion.
+# title-size: 34pt
+# subtitle-size: 17pt
+
+# Tipografia: el nombre de familia que ve `typst fonts` (puede diferir del de
+# fontconfig). titlefont y subtitlefont son opcionales y caen en mainfont.
+mainfont: "Liberation Sans"
+# titlefont: "Liberation Serif"
+# subtitlefont: "Liberation Serif"
+
+# Paleta. Los colores van entre comillas o sin el numeral, porque en YAML el
+# numeral abre un comentario.
+pagecolor: "ffffff"
+textcolor: "0A0E50"
+accent: "CF3889"
+
+# Imagen. `image-position` es top (defecto), bottom, left o right, y
+# `image-fraction` cuanto del papel ocupa. El recorte se encuadra con image-x e
+# image-y (0% arriba o izquierda, 100% abajo o derecha); `image-dim` pone un velo
+# negro encima, de 0 a 1.
+image: foto.jpg
+image-position: top
+image-fraction: 42%
+image-y: 45%
+image-credit: "Foto: Nombre Apellido"
+
+# Imagen suelta que se dibuja encima de todo (un sello, la mascota del proyecto)
+# sin mover la foto ni el texto. Sin overlay-x/overlay-y queda centrada en la
+# costura entre las dos areas, pegada al margen: mitad sobre la foto, mitad
+# sobre el titulo. Los dos aceptan una medida o una razon del papel.
+# overlay: sello.png
+# overlay-width: 22%
+# overlay-x: 12cm
+# overlay-y: 30%
+
+title: "{{titulo}}"
+subtitle: "{{subtitulo}}"
+
+# Quienes presentan. `affiliation` es opcional y acepta una lista. Si el head
+# viene de un paper, sirve tal cual el `authors:` de los perfiles de revista.
+presenters:
+  - name: "Nombre Apellido"
+    affiliation: "Departamento, Universidad"
+  - name: "Otro Nombre"
+    affiliation: "Instituto"
+
+date: "{{fecha}}"
+place: "{{lugar}}"
+url: "{{url}}"
+# El QR codifica `qr:` y, si no esta, la url visible. `qr-caption` es la linea
+# que va debajo.
+# qr: "https://ejemplo.cl/inscripcion"
+qr-caption: "Inscripciones"
+# El porte del QR y el alto de los logos tambien salen de fontsize; se fijan aqui
+# solo para cambiar la proporcion.
+# qr-size: 2.6cm
+
+# Logos institucionales, a la izquierda del pie. `anid: true` agrega a la derecha
+# el logo MinCiencia + ANID que trae panduck (queda copiado junto al documento
+# como _panduck-anid.png); tambien acepta la ruta de otro logo de agencia.
+logos:
+  - logo-uno.png
+  - logo-dos.png
+# logo-height: 1.1cm
+# Los logos van en fila al pie (bottom, el defecto) o apilados en una columna a
+# un costado del texto, que libera esa franja cuando el afiche lleva mucho
+# contenido. En columna se igualan por ancho con logo-width y el QR encabeza la
+# columna, en vez de ir junto a la fecha.
+# logo-position: right
+# logo-width: 18%
+anid: true
+funding: "{{financiamiento}}"
+---

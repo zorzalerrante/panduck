@@ -35,6 +35,7 @@ PERFILES = {
     "tufte-book": "tufte-book",
     "slides": "slides",
     "instagram": "instagram",
+    "afiche": "afiche",
 }
 
 

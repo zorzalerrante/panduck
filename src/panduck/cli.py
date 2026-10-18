@@ -168,6 +168,17 @@ def avisa_desborde(typ, typst_args):
     if not marcas:
         return
     marcas.sort(key=lambda m: m["n"])
+    # Una pagina de alto fijo (el afiche) no se parte cuando el contenido sobra:
+    # se sale del papel. Esas marcas traen el alto natural del contenido y el que
+    # queda de papel, los dos en puntos.
+    for m in marcas:
+        if m.get("alto") is None or m.get("tope") is None:
+            continue
+        if m["alto"] > m["tope"] + 1:  # 1pt de tolerancia
+            print(f"[panduck] aviso: el contenido sobrepasa la pagina por "
+                  f"{(m['alto'] - m['tope']) / 28.35:.1f} cm y se sale del papel. "
+                  f"Baja fontsize, reduce la banda de imagen o acorta el texto.",
+                  file=sys.stderr)
     largos = []
     for i, m in enumerate(marcas):
         fin = marcas[i + 1]["p"] if i + 1 < len(marcas) else m["t"] + 1

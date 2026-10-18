@@ -1,0 +1,392 @@
+// Plantilla de afiche (poster o flyer) para panduck (typst). Una pagina con una
+// imagen a sangre en una banda (arriba, abajo, izquierda o derecha) y el resto
+// del papel para el titulo, el subtitulo, quienes presentan, los datos del
+// evento (fecha, lugar, url), el codigo QR, los logos institucionales y la
+// mencion al financiamiento.
+//
+// Todo el contenido sale del head.yaml; el cuerpo del markdown, si lo hay, va
+// como bajada bajo la lista de presentadores. El QR lo dibuja tiaoma (paquete
+// typst vendorizado en data/typst-packages), asi que se genera al compilar y no
+// hay que producir una imagen aparte.
+//
+// Reemplaza la plantilla typst por defecto de pandoc, asi que reincluye a mano
+// las definiciones que el writer presupone (horizontalrule, terms, blockquote).
+
+#import "@local/tiaoma:0.3.0"
+
+// pandoc escapa el guion bajo y la almohadilla al interpolar un metadato: en una
+// ruta la barra invertida sobrevive dentro del string y typst no encuentra el
+// archivo (foto\_1.jpg). Se quita antes de usarla.
+#let ruta(s) = s.replace("\\", "")
+// Lo mismo con un color: se deja solo lo hexadecimal y la almohadilla la pone
+// esta funcion, asi da igual escribirlo con o sin numeral en el YAML. No se
+// llama `color` para no tapar el tipo del mismo nombre de typst.
+#let desde_hex(v) = rgb("#" + v.replace(regex("[^0-9A-Fa-f]"), ""))
+
+// ---- Configuracion (head.yaml) ---------------------------------------------
+
+#let papel = "$if(papersize)$$papersize$$else$a4$endif$"
+#let margen = $if(margin)$$margin$$else$1.5cm$endif$
+#let cuerpo_size = $if(fontsize)$$fontsize$$else$11pt$endif$
+#let idioma = "$if(lang)$$lang$$else$es$endif$"
+
+// Tipografia: la del cuerpo, y una propia para el titulo y el subtitulo. Los
+// nombres son los de familia tipografica que ve `typst fonts`.
+#let fuente = $if(mainfont)$"$mainfont$"$else$"Liberation Sans"$endif$
+#let fuente_titulo = $if(titlefont)$"$titlefont$"$else$fuente$endif$
+#let fuente_subtitulo = $if(subtitlefont)$"$subtitlefont$"$else$fuente_titulo$endif$
+
+// Paleta: papel, tinta y acento (regla, subtitulo y url).
+#let papel_color = desde_hex("$if(pagecolor)$$pagecolor$$else$ffffff$endif$")
+#let tinta = desde_hex("$if(textcolor)$$textcolor$$else$0A0E50$endif$")
+#let acento = desde_hex("$if(accent)$$accent$$else$CF3889$endif$")
+
+// Imagen: posicion de la banda (top, bottom, left, right), cuanto ocupa del
+// papel, encuadre del recorte (0% arriba o izquierda, 100% abajo o derecha) y
+// velo negro encima, de 0 a 1, para cuando el credito no se lee sobre la foto.
+// El credito va en blanco, que es lo que sirve sobre una foto; sobre una imagen
+// clara (un mapa, una ilustracion sobre papel) se cambia con image-credit-color.
+#let foto_ruta = "$if(image)$$image$$endif$"
+#let foto_pos = "$if(image-position)$$image-position$$else$top$endif$"
+#let foto_frac = $if(image-fraction)$$image-fraction$$else$45%$endif$
+#let foto_x = $if(image-x)$$image-x$$else$50%$endif$
+#let foto_y = $if(image-y)$$image-y$$else$50%$endif$
+#let foto_velo = $if(image-dim)$$image-dim$$else$0$endif$
+#let foto_credito = [$if(image-credit)$$image-credit$$endif$]
+#let credito_color = desde_hex("$if(image-credit-color)$$image-credit-color$$else$ffffff$endif$")
+
+// Tamanos derivados del cuerpo, para que subir fontsize escale el afiche entero
+// (un A3 se compone con el mismo head subiendo fontsize). Cada uno se puede
+// fijar aparte en el head.
+#let titulo_size = $if(title-size)$$title-size$$else$3.4 * cuerpo_size$endif$
+#let subtitulo_size = $if(subtitle-size)$$subtitle-size$$else$1.45 * cuerpo_size$endif$
+
+// Presentadores: lista de nombre y afiliacion, que afiche-meta.lua normaliza
+// desde `presenters:` o, si no esta, desde el `authors:` de los perfiles de
+// revista.
+#let presentadores = (
+$for(presenters)$  (nombre: [$presenters.name$], afiliacion: [$if(presenters.affiliation)$$presenters.affiliation$$endif$]),
+$endfor$)
+
+// Datos del evento. El QR codifica `qr:` y, si no esta, la url visible.
+#let fecha = [$if(date)$$date$$endif$]
+#let lugar = [$if(place)$$place$$elseif(venue)$$venue$$endif$]
+#let url_texto = [$if(url)$$url$$endif$]
+#let qr_dato = ruta("$if(qr)$$qr$$else$$if(url)$$url$$endif$$endif$")
+#let qr_pie = [$if(qr-caption)$$qr-caption$$endif$]
+#let qr_size = $if(qr-size)$$qr-size$$else$6.7 * cuerpo_size$endif$
+#let qr_size_dado = $if(qr-size)$true$else$false$endif$
+#let qr_color = desde_hex("$if(qr-color)$$qr-color$$else$$if(textcolor)$$textcolor$$else$0A0E50$endif$$endif$")
+
+// Logos institucionales, logo de la agencia (anid: true usa el de panduck, que
+// afiche-meta.lua deja junto al documento) y mencion al financiamiento. El alto
+// de los logos y el porte del QR tambien salen de fontsize, para que un A3 con
+// fontsize mas grande no quede con un QR y unos logos de A4.
+#let logos = (
+$for(logos)$  ruta("$logos$"),
+$endfor$)
+#let logo_alto = $if(logo-height)$$logo-height$$else$2.85 * cuerpo_size$endif$
+// `logo-position` decide si los logos van en una fila al pie (bottom, el
+// defecto) o en una columna vertical a un costado del texto (left o right). En
+// columna se igualan por ancho (`logo-width`, una razon del bloque de texto o
+// una medida) y no por alto, que es lo que deja pareja una pila de logos de
+// proporciones distintas.
+#let logo_pos = "$if(logo-position)$$logo-position$$else$bottom$endif$"
+#let logo_ancho = $if(logo-width)$$logo-width$$else$18%$endif$
+// el logo de la agencia va mas alto que los institucionales: el de ANID lleva
+// dos lineas de texto y a la misma altura queda ilegible
+#let agencia_alto = $if(anid-height)$$anid-height$$else$1.45 * logo_alto$endif$
+#let agencia = "$if(anid)$$anid$$endif$"
+#let financiamiento = [$if(funding)$$for(funding)$$funding$$sep$ $endfor$$endif$]
+// El ack del financiamiento va bajo el logo de la agencia, que es lo que lo
+// identifica, y acotado a su ancho para que se lea como su pie. Sin logo de
+// agencia vuelve al pie del bloque de texto.
+#let ack = if financiamiento != [] {
+  text(size: 0.68 * cuerpo_size, fill: tinta.lighten(35%), financiamiento)
+} else { none }
+
+// Imagen suelta que se dibuja sobre todo lo demas (un sello, el logo del evento)
+// sin mover nada: va con `place`, asi que no desplaza la banda de foto ni el
+// bloque de texto y puede quedar a caballo entre los dos. Sin `overlay-x` ni
+// `overlay-y` queda centrada en la costura entre la foto y el texto, pegada al
+// margen; los dos aceptan una medida o una razon del papel.
+#let sello_ruta = "$if(overlay)$$overlay$$endif$"
+#let sello_ancho = $if(overlay-width)$$overlay-width$$else$25%$endif$
+#let sello_x = $if(overlay-x)$$overlay-x$$else$none$endif$
+#let sello_y = $if(overlay-y)$$overlay-y$$else$none$endif$
+
+// ---- Estilos ---------------------------------------------------------------
+
+// width/height del head sobreescriben el tamano de papel, para un afiche que no
+// va en un formato estandar (una pantalla, un pendon).
+#set page(
+  paper: papel,
+  $if(width)$width: $width$,$endif$
+  $if(height)$height: $height$,$endif$
+  margin: 0pt,
+  fill: papel_color,
+)
+#set text(font: (fuente,), size: cuerpo_size, fill: tinta, lang: idioma)
+#set par(justify: false, leading: 0.6em)
+#show heading: it => it.body
+
+// Definiciones que presupone el writer typst de pandoc
+#let horizontalrule = line(length: 100%, stroke: 0.5pt + tinta)
+#let blockquote(body) = block(inset: (left: 1.2em), body)
+#let endnote(num, contents) = stack(dir: ltr, spacing: 3pt, super[#num], contents)
+#show terms: it => it.children.map(c => [#strong[#c.term] #block(inset: (left: 1.2em))[#c.description]]).join()
+
+// ---- Piezas ----------------------------------------------------------------
+
+// La foto cubre su banda: se escala hasta taparla por el lado que falte y el
+// sobrante se reparte segun el encuadre, en vez de dejarselo a `fit: "cover"`,
+// que siempre recorta por el centro (en un afiche eso corta caras y letreros).
+#let cubre(path, w, h) = context {
+  let natural = measure(image(path))
+  let escala = calc.max(w / natural.width, h / natural.height)
+  let ancho = natural.width * escala
+  let alto = natural.height * escala
+  box(width: w, height: h, clip: true, {
+    place(dx: (w - ancho) * foto_x, dy: (h - alto) * foto_y,
+          image(path, width: ancho, height: alto))
+    if foto_velo > 0 {
+      place(rect(width: w, height: h, stroke: none,
+                 fill: black.transparentize(100% - foto_velo * 100%)))
+    }
+    if foto_credito != [] {
+      place(bottom + right, dx: -0.5em, dy: -0.4em,
+            text(size: 0.62 * cuerpo_size, fill: credito_color.transparentize(25%), foto_credito))
+    }
+  })
+}
+
+#let titulo_bloque = {
+  set par(leading: 0.35em)
+  text(font: (fuente_titulo,), size: titulo_size, weight: "bold",
+       hyphenate: false)[$title$]
+}
+
+$if(subtitle)$
+#let subtitulo_bloque = {
+  set par(leading: 0.4em)
+  text(font: (fuente_subtitulo,), size: subtitulo_size, fill: acento,
+       hyphenate: false)[$subtitle$]
+}
+$else$
+#let subtitulo_bloque = none
+$endif$
+
+// Cada presentador va con su nombre destacado y la afiliacion debajo, mas chica.
+#let presentadores_bloque = if presentadores.len() > 0 {
+  stack(dir: ttb, spacing: 0.6em, ..presentadores.map(p => {
+    text(size: 1.25 * cuerpo_size, weight: "bold", p.nombre)
+    if p.afiliacion != [] {
+      linebreak()
+      text(size: 0.85 * cuerpo_size, fill: tinta.lighten(35%), p.afiliacion)
+    }
+  }))
+} else { none }
+
+// las piezas que pueden faltar se filtran antes de apilarlas: un `none` en el
+// stack no dibuja nada pero igual se lleva su espaciado
+#let apila(sep, piezas) = stack(dir: ttb, spacing: sep, ..piezas.filter(x => x != none))
+
+// El QR con su pie, al ancho que le toque: `qr-size` cuando va junto a los datos
+// y el ancho de la columna cuando va en ella.
+#let qr_en(ancho) = if qr_dato != "" {
+  apila(0.4em, (
+    tiaoma.qrcode(qr_dato, options: (fg-color: qr_color.to-hex().slice(1),
+                                     bg-color: "00000000"), width: ancho),
+    if qr_pie != [] {
+      block(width: ancho, align(center, text(size: 0.7 * cuerpo_size,
+                                             fill: tinta.lighten(25%), qr_pie)))
+    },
+  ))
+} else { none }
+
+// Los mismos logos apilados en vertical, para `logo-position: left|right`. El de
+// la agencia va al final, que es donde se lee como marca del financiamiento.
+#let logos_columna = if logos.len() > 0 or agencia != "" {
+  let piezas = logos.map(l => image(l, width: 100%))
+  if agencia != "" {
+    piezas.push(apila(0.5em, (image(ruta(agencia), width: 100%),
+                              if ack != none { block(width: 100%, ack) })))
+  }
+  apila(1.4em, piezas)
+} else { none }
+
+#let en_columna = logo_pos != "bottom" and logos_columna != none
+
+// Fecha, lugar y url. Con los logos al pie, el QR va a la derecha de esa misma
+// franja, alineado abajo para que el bloque quede parejo; con los logos en
+// columna, el QR se va con ellos (encabeza la columna) y aqui queda solo el texto.
+// El interlineado de estas tres lineas va aparte del cuerpo: son la informacion
+// que se lee de lejos y pegadas se leen como un bloque solido.
+// El lugar y la url van en la misma linea, separados por un punto medio: la
+// direccion rara vez ocupa el ancho del bloque y la url sola dejaba una linea
+// casi vacia. La url va en una caja para que, si las dos juntas no caben, el
+// salto quede entre ambas y no dentro de la direccion web.
+#let lugar_y_url = {
+  let piezas = ()
+  if lugar != [] { piezas.push(text(size: 1.05 * cuerpo_size, lugar)) }
+  if url_texto != [] {
+    piezas.push(box(text(size: 1.05 * cuerpo_size, fill: acento, weight: "bold",
+      if qr_dato != "" {
+        link(if qr_dato.starts-with("http") { qr_dato } else { "https://" + qr_dato },
+             url_texto)
+      } else { url_texto })))
+  }
+  if piezas.len() == 0 { none } else {
+    piezas.join(text(size: 1.05 * cuerpo_size, fill: tinta.lighten(50%),
+                     [#h(0.55em)·#h(0.55em)]))
+  }
+}
+
+#let datos_lineas = apila(0.6em, (
+    if fecha != [] { text(size: 1.35 * cuerpo_size, weight: "bold", fecha) },
+    lugar_y_url,
+  ))
+
+#let datos_bloque = if en_columna { datos_lineas } else {
+  grid(columns: (1fr, auto), column-gutter: 1.2em, align: bottom,
+       datos_lineas, qr_en(qr_size))
+}
+
+// Logos institucionales a la izquierda y el de la agencia a la derecha, que es
+// como se piden en los formatos de financiamiento publico.
+#let logos_bloque = if logos.len() > 0 or agencia != "" {
+  context {
+    // El ack va en una segunda fila para que los logos sigan alineados por su
+    // borde inferior, y se acota al ancho medido del logo de la agencia: la
+    // columna es `auto`, asi que un ack sin acotar la estiraria a su largo
+    // natural y correria los logos institucionales.
+    let logo_agencia = if agencia != "" {
+      image(ruta(agencia), height: agencia_alto)
+    } else { none }
+    grid(columns: (1fr, auto), column-gutter: 1em, row-gutter: 0.5em, align: bottom,
+      if logos.len() > 0 {
+        stack(dir: ltr, spacing: 1.1em,
+              ..logos.map(l => box(baseline: 0pt, image(l, height: logo_alto))))
+      } else { [] },
+      if logo_agencia != none { logo_agencia } else { [] },
+      [],
+      if ack != none and logo_agencia != none {
+        block(width: measure(logo_agencia).width, ack)
+      } else { [] },
+    )
+  }
+} else { none }
+
+// ---- Composicion -----------------------------------------------------------
+
+// Arriba el titulo y quienes presentan; pegados al borde inferior los datos, los
+// logos y el financiamiento.
+// Las separaciones van con `block(above:)` y no con `v()`: `v()` se suma al
+// espaciado que typst pone entre bloques, asi que el hueco real dependia del
+// tamano del texto de alrededor. El del titulo con el subtitulo se mide contra
+// el titulo (los dos se leen como una unidad, no como dos parrafos).
+#let encabezado = {
+  titulo_bloque
+  if subtitulo_bloque != none {
+    block(above: 0.28 * titulo_size, below: 0pt, subtitulo_bloque)
+  }
+  if presentadores_bloque != none {
+    block(above: 1.6em, below: 0pt, presentadores_bloque)
+  }
+  let bajada = [$body$]
+  if bajada != [] { block(above: 1.3em, below: 0pt, bajada) }
+}
+
+#let pie = apila(1.1em, (
+  line(length: 100%, stroke: 2.5pt + acento),
+  datos_bloque,
+  if not en_columna { logos_bloque },
+  if agencia == "" { ack },
+))
+
+// La fila 1fr del medio es la que separa los dos grupos y pega el pie al borde
+// inferior del papel.
+#let separacion = 0.8em
+#let columna_texto = grid(rows: (auto, 1fr, auto), row-gutter: separacion, encabezado, [], pie)
+// La columna lateral encabeza con el QR (arriba, donde se ve de lejos) y cierra
+// con los logos al pie. El QR toma el ancho de la columna salvo que el head fije
+// `qr-size`, para que quede a la misma caja que los logos.
+#let columna_lateral = grid(rows: (auto, 1fr, auto), row-gutter: separacion,
+  qr_en(if qr_size_dado { qr_size } else { 100% }), [], logos_columna)
+// Con los logos en columna, el bloque de informacion se parte en dos: el texto
+// ocupa el resto del ancho y los logos se apilan al costado, pegados al borde
+// inferior para que cierren a la misma altura que el financiamiento.
+#let info = if not en_columna { columna_texto } else if logo_pos == "left" {
+  grid(columns: (logo_ancho, 1fr), column-gutter: 1.4em,
+       columna_lateral, columna_texto)
+} else {
+  grid(columns: (1fr, logo_ancho), column-gutter: 1.4em,
+       columna_texto, columna_lateral)
+}
+
+#context {
+  let ancho = page.width
+  let alto = page.height
+  let horizontal = foto_pos == "left" or foto_pos == "right"
+  let hay_foto = foto_ruta != ""
+  let foto_w = if not hay_foto { 0pt } else if horizontal { foto_frac * ancho } else { ancho }
+  let foto_h = if not hay_foto { 0pt } else if horizontal { alto } else { foto_frac * alto }
+  let banda = if hay_foto { cubre(ruta(foto_ruta), foto_w, foto_h) } else { none }
+  let texto = block(width: 100%, height: 100%, inset: margen, info)
+
+  // Aviso de desborde: el bloque de informacion tiene alto fijo (es lo que pega
+  // el pie al borde inferior), asi que un texto de mas no parte la pagina, se
+  // sale del papel sin decir nada. Se mide el alto natural de las dos partes y
+  // se compara con lo que queda de papel; `panduck build` lee la marca y avisa.
+  let ancho_util = (if horizontal { ancho - foto_w } else { ancho }) - 2 * margen
+  let ancho_lateral = 0pt
+  if en_columna {
+    ancho_lateral = if type(logo_ancho) == ratio { logo_ancho * ancho_util } else { logo_ancho }
+    ancho_util = ancho_util - ancho_lateral - 1.4em.to-absolute()
+  }
+  let alto_util = (if horizontal { alto } else { alto - foto_h }) - 2 * margen
+  let natural = (measure(block(width: ancho_util, encabezado)).height
+                 + measure(block(width: ancho_util, pie)).height + 2 * separacion.to-absolute())
+  // La columna lateral tambien puede desbordar: lleva el QR, los logos y el ack
+  // del financiamiento, que es texto y crece con lo que se escriba.
+  if en_columna {
+    natural = calc.max(natural, measure(block(width: ancho_lateral, columna_lateral)).height
+                                + 2 * separacion.to-absolute())
+  }
+  place([#metadata((
+    n: 1, p: counter(page).get().first(), t: counter(page).final().first(),
+    alto: natural / 1pt, tope: alto_util.to-absolute() / 1pt,
+  ))<panduck-page>])
+
+  if not hay_foto {
+    block(width: ancho, height: alto, inset: margen, info)
+  } else if foto_pos == "left" {
+    grid(columns: (foto_w, 1fr), rows: (alto,), banda, texto)
+  } else if foto_pos == "right" {
+    grid(columns: (1fr, foto_w), rows: (alto,), texto, banda)
+  } else if foto_pos == "bottom" {
+    grid(columns: (1fr,), rows: (1fr, foto_h), texto, banda)
+  } else {
+    grid(columns: (1fr,), rows: (foto_h, 1fr), banda, texto)
+  }
+
+  // El sello va al final para quedar sobre lo demas (typst dibuja en orden) y
+  // dentro de un place, que lo saca del flujo: ninguna de las dos areas se
+  // mueve. El default lo deja a caballo en la costura, con la mitad sobre la
+  // foto y la mitad sobre el texto.
+  if sello_ruta != "" {
+    let sw = if type(sello_ancho) == ratio { sello_ancho * ancho } else { sello_ancho }
+    let sh = measure(image(ruta(sello_ruta), width: sw)).height
+    let sx = if sello_x != none {
+      if type(sello_x) == ratio { sello_x * ancho } else { sello_x }
+    } else if horizontal and hay_foto {
+      // la costura queda a foto_w del borde de la foto: el izquierdo o el derecho
+      (if foto_pos == "right" { ancho - foto_w } else { foto_w }) - sw / 2
+    } else { margen }
+    let sy = if sello_y != none {
+      if type(sello_y) == ratio { sello_y * alto } else { sello_y }
+    } else if horizontal or not hay_foto { margen
+    } else if foto_pos == "bottom" { alto - foto_h - sh / 2 } else { foto_h - sh / 2 }
+    place(top + left, dx: sx, dy: sy, image(ruta(sello_ruta), width: sw))
+  }
+}

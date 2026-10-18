@@ -1,0 +1,32 @@
+# Campos que `panduck init afiche` pregunta. Las claves corresponden a los
+# marcadores {{clave}} del head.yaml. Este archivo no se copia al directorio del
+# usuario.
+[[prompts]]
+key = "titulo"
+question = "Titulo del afiche"
+default = "Titulo de la charla"
+
+[[prompts]]
+key = "subtitulo"
+question = "Subtitulo o bajada corta"
+default = "Ciclo de charlas abiertas"
+
+[[prompts]]
+key = "fecha"
+question = "Fecha y hora"
+default = "Jueves 4 de septiembre, 15:00 h"
+
+[[prompts]]
+key = "lugar"
+question = "Lugar"
+default = "Auditorio del Departamento, Beauchef 851"
+
+[[prompts]]
+key = "url"
+question = "URL visible (tambien es lo que codifica el QR)"
+default = "ejemplo.cl/charla"
+
+[[prompts]]
+key = "financiamiento"
+question = "Mencion al financiamiento"
+default = "Proyecto Fondecyt de Iniciacion 11250000, financiado por ANID."
