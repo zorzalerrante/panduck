@@ -5,6 +5,8 @@
 --   # {background-image="bg.png"}   imagen de fondo (cubre la pagina)
 --   # {background-dim="0.35"}       velo negro sobre esa imagen, 0 a 1, para que
 --                                   el texto despegue de una foto con detalle
+--   # {background-tint="6b0f4e"}    color del velo (default negro); dim sigue
+--                                   siendo su opacidad, y si no viene queda en 0.5
 --   # {pagecolor="1b3b6f"}          color de fondo
 --   # {textcolor="ffffff"}          color de texto explicito (si no, se elige solo)
 --   # {.top}                        no centrar verticalmente (alinear arriba)
@@ -14,7 +16,11 @@
 --                                   panorama-x / panorama-y fijan el encuadre
 --   # {footer="..."}                pie propio de ese post, en vez del general;
 --                                   acepta iconos :nombre: y formulas ($\cdot$)
---   # {.nofooter}                    ese post va sin pie (marca ni numero)
+--   # {.nofooter}                   ese post va sin pie (marca ni numero)
+--   # {overlay="sello.png"}         imagen suelta sobre el post, fuera del
+--                                   margen (overlay-position elige la esquina,
+--                                   overlay-width el porte y overlay-inset,
+--                                   overlay-x, overlay-y la corren)
 -- Los mismos valores a nivel documento (head.yaml) son los defaults de cada post.
 -- La alineacion del encabezado vale para el post entero; para un bloque suelto
 -- (titulo centrado y bajada a la izquierda) va ::: {.left} / .center / .right.
@@ -194,7 +200,7 @@ end
 -- w/h: geometria de la pagina en cm (defaults iguales a los de la plantilla).
 -- Solo se usa la proporcion, para saber que parte de la foto cae en cada franja
 -- de un panorama.
-local meta = { pagecolor = nil, image = nil, textcolor = nil, dim = nil, w = 10, h = 12.5 }
+local meta = { pagecolor = nil, image = nil, textcolor = nil, dim = nil, tint = nil, w = 10, h = 12.5 }
 
 -- Velo oscuro sobre la imagen de fondo, 0 a 1, para que el texto despegue de una
 -- foto con mucho detalle. Se aplica tambien al color dominante con que se elige
@@ -206,9 +212,14 @@ local function dim_valor(s)
   return math.max(0, math.min(1, v))
 end
 
-local function aplicar_dim(rgb, dim)
+local function aplicar_dim(rgb, dim, tint)
   if not rgb or not dim then return rgb end
-  return { rgb[1] * (1 - dim), rgb[2] * (1 - dim), rgb[3] * (1 - dim) }
+  -- el velo mezcla el fondo con su color (negro si no hay tint) segun dim
+  local tr, tg, tb = 0, 0, 0
+  if tint then tr, tg, tb = hex_to_rgb(tint) end
+  if not tr then tr, tg, tb = 0, 0, 0 end
+  return { rgb[1] * (1 - dim) + tr * dim, rgb[2] * (1 - dim) + tg * dim,
+           rgb[3] * (1 - dim) + tb * dim }
 end
 
 local UNIT = { cm = 1, mm = 0.1, ["in"] = 2.54, pt = 2.54 / 72, px = 2.54 / 96 }
@@ -222,6 +233,21 @@ end
 local function pct(s, default)
   local v = s and tostring(s):match("^(%-?%d+%.?%d*)%%$")
   return v and tonumber(v) / 100 or default
+end
+
+-- Esquina donde se ancla el overlay. La plantilla la lee token a token (cada uno
+-- manda sobre su eje), asi que "bottom", "bottom-center" y "center-bottom" son la
+-- misma; aqui solo se valida el vocabulario.
+local ANCLA = {}
+for _, v in ipairs({ "left", "center", "right", "top", "middle", "bottom" }) do
+  ANCLA[v] = true
+end
+
+local function esquina_valida(pos)
+  for t in pos:gmatch("[^-]+") do
+    if not ANCLA[t] then return false end
+  end
+  return true
 end
 
 -- Alineacion del contenido del post, dos ejes independientes. Los defaults
@@ -257,10 +283,14 @@ local function post_opts(attr, span)
   -- el velo solo tiene sentido sobre una imagen; sobre un pagecolor se cambia el color
   local dim = dim_valor((attr and attr.attributes["background-dim"]) or meta.dim)
   if dim == 0 then dim = nil end
-  local resolved = resolve_textcolor(tc, pagecolor, aplicar_dim(fondo, dim))
+  -- un tint sin dim no se veria: se le da una opacidad media
+  local tint = (attr and attr.attributes["background-tint"]) or meta.tint
+  if tint and not dim then dim = 0.5 end
+  local resolved = resolve_textcolor(tc, pagecolor, aplicar_dim(fondo, dim, tint))
   local o = {}
   if pagecolor then o[#o + 1] = "pagecolor: " .. rgb_lit(pagecolor) end
   if dim and (image or span) then o[#o + 1] = "background-dim: " .. dim end
+  if tint and dim and (image or span) then o[#o + 1] = "background-tint: " .. rgb_lit(tint) end
   if span then
     o[#o + 1] = 'panorama-path: "' .. span.path .. '"'
     o[#o + 1] = "panorama-n: " .. span.n
@@ -274,6 +304,26 @@ local function post_opts(attr, span)
   o[#o + 1] = "textcolor: " .. rgb_lit(resolved)
   for _, k in ipairs({ "fontsize", "leading", "margin" }) do
     if attr and attr.attributes[k] then o[#o + 1] = k .. ": " .. attr.attributes[k] end
+  end
+  -- Imagen suelta sobre el post, dibujada fuera del margen (un sello, un logo).
+  -- La ruta va como atributo y no por interpolacion de plantilla, asi que no
+  -- sufre el escape de _ que hace el writer typst.
+  local overlay = (attr and attr.attributes["overlay"]) or meta.overlay
+  if tiene_alguna(attr, { "nooverlay", "sin-overlay" }) then overlay = nil end
+  if overlay then
+    o[#o + 1] = 'overlay-path: "' .. overlay .. '"'
+    for _, k in ipairs({ "overlay-width", "overlay-inset", "overlay-x", "overlay-y" }) do
+      local v = (attr and attr.attributes[k]) or meta[k]
+      if v then o[#o + 1] = k .. ": " .. v end
+    end
+    local pos = (attr and attr.attributes["overlay-position"]) or meta["overlay-position"]
+    -- una esquina mal escrita caeria al centro sin decir nada
+    if pos and not esquina_valida(pos) then
+      io.stderr:write("[instagram] overlay-position desconocida: " .. pos ..
+        " (combinacion de left/center/right con top/middle/bottom)\n")
+      pos = nil
+    end
+    if pos then o[#o + 1] = 'overlay-position: "' .. pos .. '"' end
   end
   -- alineacion en dos ejes; el default (centrado, al medio) no se emite
   local h = primera_clase(attr, HALIGN)
@@ -507,8 +557,15 @@ function Pandoc(doc)
   meta.image = doc.meta["background-image"] and utils.stringify(doc.meta["background-image"]) or nil
   meta.textcolor = doc.meta.textcolor and utils.stringify(doc.meta.textcolor) or nil
   meta.dim = doc.meta["background-dim"] and utils.stringify(doc.meta["background-dim"]) or nil
+  meta.tint = doc.meta["background-tint"] and utils.stringify(doc.meta["background-tint"]) or nil
   meta.w = (doc.meta.width and to_cm(utils.stringify(doc.meta.width))) or meta.w
   meta.h = (doc.meta.height and to_cm(utils.stringify(doc.meta.height))) or meta.h
+  -- overlay comun a todos los posts (una marca en la esquina); un post lo saca
+  -- con .nooverlay o lo cambia con su propio atributo
+  for _, k in ipairs({ "overlay", "overlay-width", "overlay-position",
+                       "overlay-inset", "overlay-x", "overlay-y" }) do
+    meta[k] = doc.meta[k] and utils.stringify(doc.meta[k]) or nil
+  end
 
   -- cabecera y pie: resuelven shortcodes de iconos a typst crudo
   for _, k in ipairs({ "header", "footer" }) do

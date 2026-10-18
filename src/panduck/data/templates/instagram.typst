@@ -111,12 +111,41 @@
   }
 }
 
-// Un post = una pagina. pagecolor pinta el fondo; image-path lo cubre (fit cover).
-// textcolor ya viene resuelto por el filtro. halign/valign viajan como string y
-// no como alineacion de typst porque `left`/`center`/`top` son palabras del
-// lenguaje y chocarian con los nombres de parametro.
+// halign/valign viajan como string y no como alineacion de typst porque
+// `left`/`center`/`top` son palabras del lenguaje y chocarian con los nombres de
+// parametro. Los mismos dos ejes arman la posicion del overlay.
 #let _H = (left: left, center: center, right: right)
 #let _V = (top: top, middle: horizon, bottom: bottom)
+
+// Imagen suelta que se dibuja sobre el post sin mover nada de lo que hay debajo.
+// Va en el foreground de la pagina, que cubre el papel entero, asi que puede
+// quedar pegada al borde, fuera del margen del texto. `sep` la despega del borde
+// y dx/dy la corren desde ahi (medida o razon del papel, positiva hacia la
+// derecha y hacia abajo).
+//
+// La posicion se lee token a token y cada uno manda sobre su eje, asi que da lo
+// mismo el orden y las formas compuestas: "bottom", "bottom-center" y
+// "center-bottom" son la misma esquina. Lo que no se nombra queda centrado.
+#let _ancla(posicion) = {
+  let h = center
+  let v = horizon
+  for t in posicion.split("-") {
+    if t in _H { h = _H.at(t) }
+    if t in _V { v = _V.at(t) }
+  }
+  h + v
+}
+
+#let _overlay(path, ancho, posicion, sep, dx, dy) = {
+  let a = _ancla(posicion)
+  let _dx = if dx != none { dx } else if a.x == right { -sep } else if a.x == left { sep } else { 0pt }
+  let _dy = if dy != none { dy } else if a.y == bottom { -sep } else if a.y == top { sep } else { 0pt }
+  block(width: 100%, height: 100%,
+        place(a, dx: _dx, dy: _dy, image(path, width: ancho)))
+}
+
+// Un post = una pagina. pagecolor pinta el fondo; image-path lo cubre (fit cover).
+// textcolor ya viene resuelto por el filtro.
 
 #let post(
   pagecolor: none,
@@ -127,6 +156,13 @@
   panorama-x: 50%,
   panorama-y: 50%,
   background-dim: 0,
+  background-tint: black,
+  overlay-path: none,
+  overlay-width: 25%,
+  overlay-position: "bottom-right",
+  overlay-inset: 0pt,
+  overlay-x: none,
+  overlay-y: none,
   textcolor: rgb("#2d2d2d"),
   fontsize: none,
   leading: none,
@@ -147,7 +183,9 @@
     fill: if pagecolor != none { pagecolor } else { white },
     background: if panorama-path != none or image-path != none {
       // el velo va encima del fondo y debajo del contenido, asi que se apila
-      // aqui mismo; con dim 0 no se dibuja nada
+      // aqui mismo; con dim 0 no se dibuja nada. dim es su opacidad y tint su
+      // color: negro oscurece, un color tine (sobre una ilustracion en grises
+      // queda un duotono)
       let fondo = if panorama-path != none {
         _panorama(panorama-path, panorama-n, panorama-i, x: panorama-x, y: panorama-y)
       } else {
@@ -158,10 +196,14 @@
         if background-dim > 0 {
           place(top + left, rect(
             width: 100%, height: 100%, stroke: none,
-            fill: black.transparentize(100% - background-dim * 100%),
+            fill: background-tint.transparentize(100% - background-dim * 100%),
           ))
         }
       })
+    },
+    foreground: if overlay-path != none {
+      _overlay(overlay-path, overlay-width, overlay-position,
+               overlay-inset, overlay-x, overlay-y)
     },
     header: if show-header and marca(header, _header) != [] {
       set text(size: 0.72em, fill: textcolor)

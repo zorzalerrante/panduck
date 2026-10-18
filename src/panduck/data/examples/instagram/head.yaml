@@ -28,6 +28,17 @@ footer: "{{footer}}"
 # Cabecera comun (mismo formato que el pie). Cada post puede poner la suya con
 # `# {header="..."}` o sacarla con .noheader; lo mismo para el pie.
 # header: "Serie de lectura"
+# Imagen suelta sobre el post, dibujada fuera del margen y sin mover el
+# contenido (un sello, un logo, una mascota). Aqui seria comun a todos los posts;
+# cada uno la cambia con `# {overlay="otra.png"}` o la saca con .nooverlay.
+# overlay-position combina left/center/right con top/middle/bottom en cualquier
+# orden (bottom-right es el defecto, y lo que no se nombra queda centrado:
+# "bottom" es lo mismo que "bottom-center"); overlay-inset la despega del borde y
+# overlay-x / overlay-y la corren desde esa esquina.
+# overlay: sello.png
+# overlay-width: 22%
+# overlay-position: top-right
+# overlay-inset: 0.3cm
 # Donde va la marca en cada franja: left, center (defecto) o right.
 # header-align: "center"
 # footer-align: "center"

@@ -68,7 +68,7 @@ Esta foto se reparte entre dos posts y se lee como una sola al deslizar.
 
 # {.nofooter panorama="bg.png"}
 
-# {background-image="bg.png"}
+# {background-image="bg.png" overlay="avatar.png" overlay-position="bottom-left" overlay-width="26%"}
 
 [**¡Disponible ahora!**]{.LARGE}
 
