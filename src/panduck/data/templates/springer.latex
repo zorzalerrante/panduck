@@ -12,6 +12,9 @@
 % ORCID por autor (\orcidlink{id}): el \orcid de la clase depende de un
 % Orcidlogo.eps ausente, asi que usamos el paquete orcidlink (dibuja el logo con
 % tikz, sin archivo externo). La clase ya carga hyperref, que orcidlink necesita.
+% La clase define \orcidlogo con \gdef y orcidlink (desde TeX Live 2025) lo
+% declara con \newcommand, que falla si ya existe: se borra antes de cargarlo.
+\let\orcidlogo\undefined
 \usepackage{orcidlink}
 
 % La clase sn-jnl (una columna) fija una caja de texto de 194.25mm sobre A4, lo
