@@ -348,24 +348,25 @@ local typst_align_dir = {
 
 -- versalitas sinteticas: deja las mayusculas a tamano completo y reduce solo las
 -- minusculas (pasadas a mayuscula). Self-contained, no depende de la plantilla.
-local TYPST_SC_OPEN = '#{ set text(tracking: 0.04em); show regex("\\p{Ll}+"): it => text(size: 0.78em)[#upper(it)]; ['
+-- El tracking se suma al que ya trae el texto (el de sans-tracking, cuando las
+-- versalitas van en la sans), por eso necesita context.
+local TYPST_SC_OPEN = '#context { set text(tracking: text.tracking + 0.04em); show regex("\\p{Ll}+"): it => text(size: 0.78em)[#upper(it)]; ['
 local TYPST_SC_CLOSE = '] }'
 
 -- familias: se completan en el hook Pandoc con los fonts del head.yaml
 local typst_sans  = '"Liberation Sans", "DejaVu Sans", "Arial"'
 local typst_serif = '"Liberation Serif", "DejaVu Serif", "Times New Roman"'
 local typst_mono  = '"DejaVu Sans Mono", "Liberation Mono", "Courier New"'
--- ajustes opcionales del span sans (sans-tracking y sans-scale del head.yaml,
--- en em respecto al cuerpo): un nombre en sans condensada suele pedir mas
--- espacio entre letras y algo mas de cuerpo que el texto que lo rodea.
-local typst_sans_extra = ''
+-- tamano y tracking de la sans respecto del texto (sans-scale, sans-tracking en
+-- el head.yaml), para una sans que a igual cuerpo se ve mas chica o apretada
+local typst_sans_opts = ''
 
 -- open/close typst para una clase (sirve para Span y Div: typst envuelve
 -- contenido inline y de bloque con la misma sintaxis de funcion)
 local function typst_codes_for(class)
   class = pfa_canon[class] or class  -- resolver alias a su nombre canonico pfa-*
   if class == 'pfa-font-smallcaps' then return TYPST_SC_OPEN, TYPST_SC_CLOSE end
-  if class == 'pfa-font-sans'  then return '#text(font: (' .. typst_sans  .. ')' .. typst_sans_extra .. ')[', ']' end
+  if class == 'pfa-font-sans'  then return '#text(font: (' .. typst_sans  .. ')' .. typst_sans_opts .. ')[', ']' end
   if class == 'pfa-font-serif' then return '#text(font: (' .. typst_serif .. '))[', ']' end
   if class == 'pfa-font-mono'  then return '#text(font: (' .. typst_mono  .. '))[', ']' end
   if typst_font_open[class] then return typst_font_open[class], ']' end
@@ -627,19 +628,13 @@ return {
       -- tiene metadato y usa la lista de respaldo.
       if doc.meta.sansfont then typst_sans = '"' .. stringify(doc.meta.sansfont) .. '"' end
       if doc.meta.monofont then typst_mono = '"' .. stringify(doc.meta.monofont) .. '"' end
-      -- el YAML de pandoc entrega los flotantes en notacion cientifica (8.0e-2);
-      -- se reformatean para que el .typ quede legible
-      local function em(v)
-        local n = tonumber(stringify(v))
-        return (n and string.format('%.4g', n) or stringify(v)) .. 'em'
-      end
-      typst_sans_extra = ''
-      if doc.meta['sans-tracking'] then
-        typst_sans_extra = typst_sans_extra .. ', tracking: ' .. em(doc.meta['sans-tracking'])
-      end
-      if doc.meta['sans-scale'] then
-        typst_sans_extra = typst_sans_extra .. ', size: ' .. em(doc.meta['sans-scale'])
-      end
+      -- solo numeros: el valor se escribe tal cual en el typst
+      local opts = {}
+      local escala = doc.meta['sans-scale'] and tonumber(stringify(doc.meta['sans-scale']))
+      local tracking = doc.meta['sans-tracking'] and tonumber(stringify(doc.meta['sans-tracking']))
+      if escala then opts[#opts + 1] = 'size: ' .. escala .. 'em' end
+      if tracking then opts[#opts + 1] = 'tracking: ' .. tracking .. 'em' end
+      typst_sans_opts = #opts > 0 and (', ' .. table.concat(opts, ', ')) or ''
     end
   },
   -- 2. Core element processing layer
