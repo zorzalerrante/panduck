@@ -1,6 +1,6 @@
-To whom it may concern,
+Dear Editor,
 
-We hereby submit the manuscript entitled *$title$* by $for(authors)$$it.name$$sep$, $endfor$ to be considered for publication as an original article for $journal$.
+We hereby submit the manuscript entitled *$title$* by $for(authors/allbutlast)$$it.name$$sep$, $endfor$$for(authors/allbutlast/last)$ and $endfor$$for(authors/last)$$it.name$$endfor$ to be considered for publication as an original article for $journal$.
 
 $cover-letter$
 
