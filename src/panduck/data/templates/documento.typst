@@ -7,7 +7,20 @@
 // Reemplaza la plantilla typst por defecto de pandoc, asi que reincluye a mano
 // las definiciones que el writer presupone (horizontalrule, terms, table).
 
-#let _paper = "$if(papersize)$$papersize$$else$a4$endif$"
+// `papersize` se escribe con los nombres de pandoc/LaTeX (`letter`, `legal`,
+// `a4paper`) y typst pide los suyos (`us-letter`, `us-legal`, `a4`), asi que se
+// traducen los comunes. Sin esto un head con `papersize: letter` compilaba en
+// `default` y fallaba en `documento`, que es justo la portabilidad que el perfil
+// promete. Un nombre que ya sea de typst pasa intacto.
+#let _papeles = (
+  letter: "us-letter", letterpaper: "us-letter",
+  legal: "us-legal", legalpaper: "us-legal",
+  executive: "us-executive", executivepaper: "us-executive",
+  ledger: "us-ledger", tabloid: "us-tabloid",
+  a4paper: "a4", a5paper: "a5", b5paper: "iso-b5",
+)
+#let _paper_dado = "$if(papersize)$$papersize$$else$a4$endif$"
+#let _paper = _papeles.at(_paper_dado, default: _paper_dado)
 #let _margin = $if(margin)$$margin$$else$2.5cm$endif$
 #let _fontsize = $if(fontsize)$$fontsize$$else$11pt$endif$
 #let _leading = $if(leading)$$leading$$else$0.65em$endif$
