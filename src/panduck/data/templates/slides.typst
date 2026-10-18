@@ -288,13 +288,36 @@
 }
 
 // Slide de seccion (encabezado # de nivel 1): pagina completa en azul marino.
-#let section-slide(mark: none, body) = {
+// `# Titulo {image="ruta"}` agrega una imagen a todo el ancho bajo la regla,
+// pensada para un diagrama con fondo transparente (por ejemplo, la etapa del
+// proceso en que va la presentacion).
+#let section-slide(mark: none, image: none, body) = {
   page(fill: mdark, footer: none)[
     #pagemark(mark)
     #align(horizon)[
-      #text(size: 1.55 * base_size, weight: "medium", fill: white)[#body]
-      #v(0.3em)
-      #line(length: 28%, stroke: 2.5pt + accent)
+      #let titulo = [
+        #text(size: 1.55 * base_size, weight: "medium", fill: white)[#body]
+        #v(0.3em)
+        #line(length: 28%, stroke: 2.5pt + accent)
+      ]
+      #titulo
+      #if image != none {
+        v(1.6em)
+        // a todo el ancho, salvo que asi no quepa bajo el titulo: una imagen
+        // alta se acota al alto libre de la pagina, o la slide se partia en dos.
+        // Se mide la composicion completa (con el espaciado entre bloques) contra
+        // el area de la pagina, porque dentro de align `layout` entrega la
+        // pagina entera y no lo que queda bajo el titulo.
+        context {
+          let ancho = page.width - 2 * base-margin.x
+          let area = page.height - base-margin.top - base-margin.bottom
+          let img = std.image(image, width: 100%)
+          let total = measure(block(width: ancho, { titulo; v(1.6em); img })).height
+          if total > area {
+            std.image(image, height: measure(img, width: ancho).height - (total - area) - 4pt)
+          } else { img }
+        }
+      }
     ]
   ]
 }

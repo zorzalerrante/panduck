@@ -172,8 +172,11 @@ function Pandoc(doc)
   for _, blk in ipairs(doc.blocks) do
     if blk.t == "Header" and blk.level == 1 then
       flush()
+      local opts = mark()
+      local img = blk.attr.attributes["image"]
+      if img then opts = opts .. ', image: "' .. img .. '"' end
       out[#out + 1] = pandoc.RawBlock("typst",
-        "#section-slide(" .. mark() .. ")[" .. to_typst(blk.content) .. "]")
+        "#section-slide(" .. opts .. ")[" .. to_typst(blk.content) .. "]")
     elseif blk.t == "Header" and blk.level == 2 then
       flush()
       cur_title, cur_attr, have_slide = blk.content, blk.attr, true
