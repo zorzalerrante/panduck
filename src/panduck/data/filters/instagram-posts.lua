@@ -5,9 +5,10 @@
 --   # {background-image="bg.png"}   imagen de fondo (cubre la pagina)
 --   # {background-dim="0.35"}       velo negro sobre esa imagen, 0 a 1, para que
 --                                   el texto despegue de una foto con detalle
---   # {background-tint="6b0f4e"}    color del velo (default negro); dim sigue
---                                   siendo su opacidad, y si no viene queda en 0.5
---   # {pagecolor="1b3b6f"}          color de fondo
+--   # {background-tint="0f3d2e"}    color del velo en vez de negro (tine el fondo)
+--   # {background-dim="0.85 0.2"}   varias paradas, de arriba hacia abajo, hacen
+--   # {background-tint="2b0f54 f72585"}  del velo un gradiente vertical
+--   # {pagecolor="1b3b6f"}          color de fondo; con varios, gradiente vertical
 --   # {textcolor="ffffff"}          color de texto explicito (si no, se elige solo)
 --   # {.top}                        no centrar verticalmente (alinear arriba)
 --   # {.left}                       alinear a la izquierda en vez de centrar
@@ -16,11 +17,18 @@
 --                                   panorama-x / panorama-y fijan el encuadre
 --   # {footer="..."}                pie propio de ese post, en vez del general;
 --                                   acepta iconos :nombre: y formulas ($\cdot$)
---   # {.nofooter}                   ese post va sin pie (marca ni numero)
---   # {overlay="sello.png"}         imagen suelta sobre el post, fuera del
---                                   margen (overlay-position elige la esquina,
---                                   overlay-width el porte y overlay-inset,
---                                   overlay-x, overlay-y la corren)
+--   # {.nofooter}                    ese post va sin pie (marca ni numero)
+--   # {overlay="sello.png"}         imagen suelta sobre el post, fuera del margen y
+--                                   sin mover el contenido; overlay-width (25%),
+--                                   overlay-position ("bottom-right", tokens de
+--                                   top/bottom/left/right/center unidos por guion),
+--                                   overlay-inset (la despega del borde) y
+--                                   overlay-x / overlay-y. .nooverlay la saca
+--   # {footer-align="right"}        lado de la marca en ese post (left/center/right)
+--   # {inset="top: 2.4cm, right: 3cm"}  zona del contenido dentro de los margenes,
+--                                   para no pisar un logo o una ilustracion que
+--                                   ya trae el fondo; una sola medida vale para
+--                                   los cuatro lados. El pie queda en el borde
 -- Los mismos valores a nivel documento (head.yaml) son los defaults de cada post.
 -- La alineacion del encabezado vale para el post entero; para un bloque suelto
 -- (titulo centrado y bajada a la izquierda) va ::: {.left} / .center / .right.
@@ -116,13 +124,42 @@ local function strip_dominants(path, n, x, y, page_w, page_h)
   return #cols == n and cols or nil
 end
 
--- prioridad: textcolor explicito > contraste del fondo (imagen o color) > charcoal
+-- Paradas de un gradiente vertical, de arriba hacia abajo: los valores de
+-- pagecolor, background-dim y background-tint separados por espacios.
+local function paradas(s)
+  local xs = {}
+  for t in tostring(s or ""):gmatch("%S+") do xs[#xs + 1] = t end
+  return #xs > 0 and xs or nil
+end
+
+-- colores {r, g, b} de una lista de hex, o nil si alguno no se lee
+local function rgbs(hexes)
+  local cs = {}
+  for i, h in ipairs(hexes or {}) do
+    local r, g, b = hex_to_rgb(h)
+    if not r then return nil end
+    cs[i] = { r, g, b }
+  end
+  return #cs > 0 and cs or nil
+end
+
+-- un valor pasa solo; varios, como arreglo de typst
+local function typ_lista(xs)
+  return #xs == 1 and xs[1] or "(" .. table.concat(xs, ", ") .. ")"
+end
+
+-- prioridad: textcolor explicito > contraste del fondo (imagen o color) > charcoal.
+-- Un pagecolor en gradiente se mide por el promedio de sus paradas.
 local function resolve_textcolor(tc, pagecolor, rgb)
   if tc then return tc end
   if rgb then return contrast_for(rgb[1], rgb[2], rgb[3]) end
-  if pagecolor then
-    local r, g, b = hex_to_rgb(pagecolor)
-    if r then return contrast_for(r, g, b) end
+  local cs = rgbs(paradas(pagecolor))
+  if cs then
+    local m = { 0, 0, 0 }
+    for _, c in ipairs(cs) do
+      for k = 1, 3 do m[k] = m[k] + c[k] / #cs end
+    end
+    return contrast_for(m[1], m[2], m[3])
   end
   return DARK
 end
@@ -200,26 +237,53 @@ end
 -- w/h: geometria de la pagina en cm (defaults iguales a los de la plantilla).
 -- Solo se usa la proporcion, para saber que parte de la foto cae en cada franja
 -- de un panorama.
-local meta = { pagecolor = nil, image = nil, textcolor = nil, dim = nil, tint = nil, w = 10, h = 12.5 }
+local meta = { pagecolor = nil, image = nil, textcolor = nil, dim = nil, tint = nil,
+  overlay = {}, w = 10, h = 12.5 }
 
--- Velo oscuro sobre la imagen de fondo, 0 a 1, para que el texto despegue de una
--- foto con mucho detalle. Se aplica tambien al color dominante con que se elige
--- el color de texto: si no, un fondo medio seguiria resolviendo a texto oscuro
--- aunque el velo ya lo dejo oscuro.
+-- Velo sobre la imagen de fondo, 0 a 1, para que el texto despegue de una foto
+-- con mucho detalle. Es negro salvo que background-tint le dé otro color. Con
+-- varias paradas en dim o en tint ("0.85 0.2", "2b0f54 f72585") el velo es un
+-- gradiente vertical: oscurece la zona del texto y deja ver el resto de la foto.
+-- Se aplica tambien al color dominante con que se elige el color de texto: si
+-- no, un fondo medio seguiria resolviendo a texto oscuro aunque el velo ya lo
+-- dejo oscuro. Lista de opacidades, o nil si no hay velo.
 local function dim_valor(s)
-  local v = tonumber(s)
-  if not v then return nil end
-  return math.max(0, math.min(1, v))
+  local vs = {}
+  for i, t in ipairs(paradas(s) or {}) do
+    local v = tonumber(t)
+    if not v then return nil end
+    vs[i] = math.max(0, math.min(1, v))
+  end
+  if #vs == 0 or math.max(table.unpack(vs)) == 0 then return nil end
+  return vs
 end
 
-local function aplicar_dim(rgb, dim, tint)
-  if not rgb or not dim then return rgb end
-  -- el velo mezcla el fondo con su color (negro si no hay tint) segun dim
-  local tr, tg, tb = 0, 0, 0
-  if tint then tr, tg, tb = hex_to_rgb(tint) end
-  if not tr then tr, tg, tb = 0, 0, 0 end
-  return { rgb[1] * (1 - dim) + tr * dim, rgb[2] * (1 - dim) + tg * dim,
-           rgb[3] * (1 - dim) + tb * dim }
+-- valor en t (0 arriba, 1 abajo) de una lista de paradas equiespaciadas, sean
+-- numeros o colores {r, g, b}
+local function en(xs, t)
+  if #xs == 1 then return xs[1] end
+  local x = t * (#xs - 1)
+  local i = math.min(math.floor(x), #xs - 2)
+  local a, b, f = xs[i + 1], xs[i + 2], x - i
+  if type(a) == "number" then return a + (b - a) * f end
+  return { a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f, a[3] + (b[3] - a[3]) * f }
+end
+
+-- Con un gradiente el contraste se mide en la parada mas densa del velo, que es
+-- donde conviene poner el texto.
+local function aplicar_dim(rgb, dims, tints)
+  if not rgb or not dims then return rgb end
+  local k = 1
+  for i, d in ipairs(dims) do
+    if d > dims[k] then k = i end
+  end
+  local dim = dims[k]
+  local c = tints and en(tints, #dims > 1 and (k - 1) / (#dims - 1) or 0) or { 0, 0, 0 }
+  return {
+    rgb[1] * (1 - dim) + c[1] * dim,
+    rgb[2] * (1 - dim) + c[2] * dim,
+    rgb[3] * (1 - dim) + c[3] * dim,
+  }
 end
 
 local UNIT = { cm = 1, mm = 0.1, ["in"] = 2.54, pt = 2.54 / 72, px = 2.54 / 96 }
@@ -282,15 +346,28 @@ local function post_opts(attr, span)
   end
   -- el velo solo tiene sentido sobre una imagen; sobre un pagecolor se cambia el color
   local dim = dim_valor((attr and attr.attributes["background-dim"]) or meta.dim)
-  if dim == 0 then dim = nil end
+  local tint = paradas((attr and attr.attributes["background-tint"]) or meta.tint)
   -- un tint sin dim no se veria: se le da una opacidad media
-  local tint = (attr and attr.attributes["background-tint"]) or meta.tint
-  if tint and not dim then dim = 0.5 end
-  local resolved = resolve_textcolor(tc, pagecolor, aplicar_dim(fondo, dim, tint))
+  if tint and not dim then dim = { 0.5 } end
+  local resolved = resolve_textcolor(tc, pagecolor, aplicar_dim(fondo, dim, rgbs(tint)))
   local o = {}
-  if pagecolor then o[#o + 1] = "pagecolor: " .. rgb_lit(pagecolor) end
-  if dim and (image or span) then o[#o + 1] = "background-dim: " .. dim end
-  if tint and dim and (image or span) then o[#o + 1] = "background-tint: " .. rgb_lit(tint) end
+  local pcs = paradas(pagecolor)
+  if pcs then
+    local lits = {}
+    for i, h in ipairs(pcs) do lits[i] = rgb_lit(h) end
+    o[#o + 1] = "pagecolor: " .. (#lits == 1 and lits[1]
+      or "gradient.linear(" .. table.concat(lits, ", ") .. ", angle: 90deg)")
+  end
+  if dim and (image or span) then
+    local ds = {}
+    for i, d in ipairs(dim) do ds[i] = tostring(d) end
+    o[#o + 1] = "background-dim: " .. typ_lista(ds)
+    if tint then
+      local lits = {}
+      for i, h in ipairs(tint) do lits[i] = rgb_lit(h) end
+      o[#o + 1] = "background-tint: " .. typ_lista(lits)
+    end
+  end
   if span then
     o[#o + 1] = 'panorama-path: "' .. span.path .. '"'
     o[#o + 1] = "panorama-n: " .. span.n
@@ -305,26 +382,14 @@ local function post_opts(attr, span)
   for _, k in ipairs({ "fontsize", "leading", "margin" }) do
     if attr and attr.attributes[k] then o[#o + 1] = k .. ": " .. attr.attributes[k] end
   end
-  -- Imagen suelta sobre el post, dibujada fuera del margen (un sello, un logo).
-  -- La ruta va como atributo y no por interpolacion de plantilla, asi que no
-  -- sufre el escape de _ que hace el writer typst.
-  local overlay = (attr and attr.attributes["overlay"]) or meta.overlay
-  if tiene_alguna(attr, { "nooverlay", "sin-overlay" }) then overlay = nil end
-  if overlay then
-    o[#o + 1] = 'overlay-path: "' .. overlay .. '"'
-    for _, k in ipairs({ "overlay-width", "overlay-inset", "overlay-x", "overlay-y" }) do
-      local v = (attr and attr.attributes[k]) or meta[k]
-      if v then o[#o + 1] = k .. ": " .. v end
-    end
-    local pos = (attr and attr.attributes["overlay-position"]) or meta["overlay-position"]
-    -- una esquina mal escrita caeria al centro sin decir nada
-    if pos and not esquina_valida(pos) then
-      io.stderr:write("[instagram] overlay-position desconocida: " .. pos ..
-        " (combinacion de left/center/right con top/middle/bottom)\n")
-      pos = nil
-    end
-    if pos then o[#o + 1] = 'overlay-position: "' .. pos .. '"' end
+  -- zona del contenido: "top: 2.4cm, right: 4cm" pasa como diccionario de typst
+  -- y una sola medida ("1cm") vale para los cuatro lados
+  local inset = attr and attr.attributes["inset"]
+  if inset then
+    o[#o + 1] = "inset: (" .. (inset:find(":") and inset or "rest: " .. inset) .. ")"
   end
+  local fa = attr and attr.attributes["footer-align"]
+  if fa then o[#o + 1] = 'footer-align: "' .. fa .. '"' end
   -- alineacion en dos ejes; el default (centrado, al medio) no se emite
   local h = primera_clase(attr, HALIGN)
   local v = primera_clase(attr, VALIGN)
@@ -341,6 +406,27 @@ local function post_opts(attr, span)
   if tiene_alguna(attr, { "noheader", "sin-cabecera" }) then o[#o + 1] = "show-header: false" end
   if tiene_alguna(attr, { "nofooter", "sin-pie" }) then o[#o + 1] = "show-footer: false" end
   if tiene_alguna(attr, { "nonumber", "sin-numero" }) then o[#o + 1] = "show-number: false" end
+  -- imagen suelta sobre el post (sello, logo): la del head.yaml vale para todos,
+  -- un post la cambia con overlay="otra.png" y la saca con .nooverlay
+  local function ov(k)
+    return (attr and attr.attributes[k]) or meta.overlay[k]
+  end
+  local overlay = ov("overlay")
+  if overlay and not tiene_alguna(attr, { "nooverlay", "sin-overlay" }) then
+    o[#o + 1] = 'overlay-path: "' .. overlay .. '"'
+    if ov("overlay-width") then o[#o + 1] = "overlay-width: " .. ov("overlay-width") end
+    local pos = ov("overlay-position")
+    -- una esquina mal escrita caeria al centro sin decir nada
+    if pos and not esquina_valida(pos) then
+      io.stderr:write("[instagram] overlay-position desconocida: " .. pos ..
+        " (combinacion de left/center/right con top/middle/bottom)\n")
+      pos = nil
+    end
+    if pos then o[#o + 1] = 'overlay-position: "' .. pos .. '"' end
+    if ov("overlay-inset") then o[#o + 1] = "overlay-inset: " .. ov("overlay-inset") end
+    if ov("overlay-x") then o[#o + 1] = "overlay-x: " .. ov("overlay-x") end
+    if ov("overlay-y") then o[#o + 1] = "overlay-y: " .. ov("overlay-y") end
+  end
   return table.concat(o, ", ")
 end
 
@@ -495,6 +581,8 @@ local function row_div(el)
   el:walk({ Image = function(img) pieces[#pieces + 1] = row_piece(img, el) end })
   if #pieces == 0 then return nil end
   local opts = { "gap: " .. (el.attributes["gap"] or "0.4em") }
+  local al = align_of(el.classes)
+  if al then opts[#opts + 1] = "halign: " .. al end
   -- height iguala las alturas; sin height, las columnas reparten el ancho
   if el.attributes["height"] then opts[#opts + 1] = "height: " .. el.attributes["height"] end
   if el.attributes["width"] then opts[#opts + 1] = "width: " .. el.attributes["width"] end
@@ -558,14 +646,12 @@ function Pandoc(doc)
   meta.textcolor = doc.meta.textcolor and utils.stringify(doc.meta.textcolor) or nil
   meta.dim = doc.meta["background-dim"] and utils.stringify(doc.meta["background-dim"]) or nil
   meta.tint = doc.meta["background-tint"] and utils.stringify(doc.meta["background-tint"]) or nil
+  for _, k in ipairs({ "overlay", "overlay-width", "overlay-position", "overlay-inset",
+                       "overlay-x", "overlay-y" }) do
+    meta.overlay[k] = doc.meta[k] and utils.stringify(doc.meta[k]) or nil
+  end
   meta.w = (doc.meta.width and to_cm(utils.stringify(doc.meta.width))) or meta.w
   meta.h = (doc.meta.height and to_cm(utils.stringify(doc.meta.height))) or meta.h
-  -- overlay comun a todos los posts (una marca en la esquina); un post lo saca
-  -- con .nooverlay o lo cambia con su propio atributo
-  for _, k in ipairs({ "overlay", "overlay-width", "overlay-position",
-                       "overlay-inset", "overlay-x", "overlay-y" }) do
-    meta[k] = doc.meta[k] and utils.stringify(doc.meta[k]) or nil
-  end
 
   -- cabecera y pie: resuelven shortcodes de iconos a typst crudo
   for _, k in ipairs({ "header", "footer" }) do

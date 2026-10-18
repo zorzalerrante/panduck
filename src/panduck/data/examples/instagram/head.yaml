@@ -18,8 +18,11 @@ pagecolor: "f4efe6"
 # textcolor: "2d2d2d"
 # background-image: bg.png
 # Velo negro sobre la imagen de fondo, 0 a 1, para que el texto despegue de una
-# foto con detalle. Entra en el calculo de contraste del color de texto.
+# foto con detalle. Entra en el calculo de contraste del color de texto. Con
+# varias paradas, de arriba hacia abajo, el velo es un gradiente ("0.9 0.2"
+# oscurece arriba); background-tint le da color y tambien admite paradas.
 # background-dim: 0.35
+# background-tint: "2b0f54 f72585"
 # Pie comun a todos los posts. Acepta iconos FontAwesome como shortcodes
 # (:instagram: :globe: :envelope: :twitter: :youtube: ...). El numero de post
 # (n / total) se agrega al borde contrario de la marca; se apaga con

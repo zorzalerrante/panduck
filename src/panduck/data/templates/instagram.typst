@@ -57,9 +57,10 @@
   image(p.path, width: 100%)
 }
 
-#let row(gap: 0.4em, height: none, width: 100%, ..pieces) = {
+// halign: la fila va centrada salvo que el div traiga .left o .right
+#let row(gap: 0.4em, height: none, width: 100%, halign: center, ..pieces) = {
   let ps = pieces.pos()
-  align(center, block(width: width, if height != none {
+  align(halign, block(width: width, if height != none {
     stack(dir: ltr, spacing: gap,
       ..ps.map(p => box(height: height, align(horizon, _row-piece-h(p, height)))))
   } else {
@@ -111,9 +112,10 @@
   }
 }
 
-// halign/valign viajan como string y no como alineacion de typst porque
-// `left`/`center`/`top` son palabras del lenguaje y chocarian con los nombres de
-// parametro. Los mismos dos ejes arman la posicion del overlay.
+// Un post = una pagina. pagecolor pinta el fondo; image-path lo cubre (fit cover).
+// textcolor ya viene resuelto por el filtro. halign/valign viajan como string y
+// no como alineacion de typst porque `left`/`center`/`top` son palabras del
+// lenguaje y chocarian con los nombres de parametro.
 #let _H = (left: left, center: center, right: right)
 #let _V = (top: top, middle: horizon, bottom: bottom)
 
@@ -136,6 +138,26 @@
   h + v
 }
 
+// Relleno del velo de fondo. dim (opacidad) y tint (color) son un valor o un
+// arreglo de paradas de arriba hacia abajo; con mas de una parada en cualquiera
+// de los dos, el velo es un gradiente vertical muestreado en 17 paradas.
+#let _velo(dim, tint) = {
+  let dims = if type(dim) == array { dim } else { (dim,) }
+  let tints = if type(tint) == array { tint } else { (tint,) }
+  let en(t) = {
+    let c = if tints.len() == 1 { tints.first() } else { gradient.linear(..tints).sample(t * 100%) }
+    let x = t * (dims.len() - 1)
+    let i = calc.min(int(x), calc.max(dims.len() - 2, 0))
+    let d = if dims.len() == 1 { dims.first() } else {
+      dims.at(i) + (dims.at(i + 1) - dims.at(i)) * (x - i)
+    }
+    c.transparentize(100% - d * 100%)
+  }
+  if dims.len() == 1 and tints.len() == 1 { en(0) } else {
+    gradient.linear(..range(17).map(k => (en(k / 16), k / 16 * 100%)), angle: 90deg)
+  }
+}
+
 #let _overlay(path, ancho, posicion, sep, dx, dy) = {
   let a = _ancla(posicion)
   let _dx = if dx != none { dx } else if a.x == right { -sep } else if a.x == left { sep } else { 0pt }
@@ -143,9 +165,6 @@
   block(width: 100%, height: 100%,
         place(a, dx: _dx, dy: _dy, image(path, width: ancho)))
 }
-
-// Un post = una pagina. pagecolor pinta el fondo; image-path lo cubre (fit cover).
-// textcolor ya viene resuelto por el filtro.
 
 #let post(
   pagecolor: none,
@@ -167,10 +186,14 @@
   fontsize: none,
   leading: none,
   margin: none,
+  // zona del contenido dentro de los margenes, para no pisar lo que ya trae
+  // dibujado el fondo (un logo, una ilustracion); el pie sigue en el borde
+  inset: none,
   halign: "center",
   valign: "middle",
   header: none,
   footer: none,
+  footer-align: none,
   show-header: true,
   show-footer: true,
   show-number: true,
@@ -193,10 +216,10 @@
       }
       block(width: 100%, height: 100%, {
         place(top + left, fondo)
-        if background-dim > 0 {
+        if background-dim != 0 {
           place(top + left, rect(
             width: 100%, height: 100%, stroke: none,
-            fill: background-tint.transparentize(100% - background-dim * 100%),
+            fill: _velo(background-dim, background-tint),
           ))
         }
       })
@@ -215,7 +238,7 @@
         let num = if _slidenum and show-number {
           [#counter(page).get().first() / #counter(page).final().first()]
         } else { [] }
-        _bar(marca(footer, _footer), num, _footer_align)
+        _bar(marca(footer, _footer), num, marca(footer-align, _footer_align))
       }
     },
   )[
@@ -225,7 +248,8 @@
     #set table(stroke: textcolor)
     #set line(stroke: textcolor)
     #set par(leading: if leading != none { leading } else { _leading })
-    #align(_H.at(halign) + _V.at(valign))[#body]
+    #let cuerpo = align(_H.at(halign) + _V.at(valign), body)
+    #if inset == none { cuerpo } else { pad(..inset, cuerpo) }
   ]
 }
 
