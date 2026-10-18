@@ -1,0 +1,29 @@
+from: markdown+smart+citations
+standalone: true
+# la clase vgtc esta afinada para pdflatex (times/mathptmx)
+pdf-engine: pdflatex
+template: vgtc
+metadata:
+  # citas numericas IEEE: el metadata de un --defaults gana sobre el front
+  # matter, asi el mismo head.yaml conserva su CSL autor-ano en otros perfiles
+  csl: ieee.csl
+filters:
+  # los filtros lua se resuelven desde <data-dir>/filters
+  # diagramas de graphviz escritos en el documento (```{.dot}); va primero: la
+  # figura que produce tiene que existir antes de crossref
+  - graphviz.lua
+  # contrato de autores compartido (affiliation_groups/affiliation_ids); el
+  # template vgtc rinde las afiliaciones como oraciones en \authorfooter
+  - process-affiliations.lua
+  - pandoc-crossref
+  - citeproc
+  # despues de citeproc; tipografia/alineacion/color por clases pfa-* (inyecta
+  # ulem/varwidth en header-includes, que este template si renderiza)
+  - fonts-and-alignment.lua
+  # inserta Funding/Competing interests/Data availability antes de las
+  # referencias (para camera-ready puede preferirse \acknowledgments a mano)
+  - insert-declarations-before-refs.lua
+  # al final del pipeline: tablas como floats tabular (longtable no compila en
+  # dos columnas) y figuras `.wide` como figure* (ancho completo)
+  - vgtc-tables.lua
+  - latex-wide-figures.lua
