@@ -8,9 +8,10 @@
 -- Each statement is emitted as a native pandoc Para so the LaTeX writer escapes
 -- special characters and renders links (\href), which a raw string could not.
 --
--- Anonymous: funding is stripped (grant numbers can identify the institution).
--- Competing interests and data availability are kept: a generic statement does
--- not identify the authors, and their text is under the author's control.
+-- Anonymous: funding and data availability are stripped (grant numbers and
+-- data agreements can identify the institution); both belong to the title page
+-- in a double-blind submission. Competing interests are kept: a generic
+-- statement does not identify the authors.
 
 local ptype = pandoc.utils.type
 local stringify = pandoc.utils.stringify
@@ -52,8 +53,8 @@ function Pandoc(doc)
     end
   end
 
-  -- Data availability: single statement.
-  if doc.meta.data then
+  -- Data availability: single statement (hidden when anonymous).
+  if doc.meta.data and not anon then
     for _, b in ipairs(section("Data availability", as_inlines(doc.meta.data))) do
       decls[#decls + 1] = b
     end
