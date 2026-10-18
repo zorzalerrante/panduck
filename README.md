@@ -68,7 +68,7 @@ Bloque centrado.
 :::
 ```
 
-Es opt-in por clase (no afecta documentos que no las usan). En typst las familias `sans`/`mono` toman el nombre de `sansfont`/`monofont` del `head.yaml`. En los perfiles con template LaTeX propio (`elsevier`, `dcc-informe`) las clases que requieren paquetes extra (subrayado/tachado, bloques, color) pueden no cargar su paquete; el resto funciona.
+Es opt-in por clase (no afecta documentos que no las usan). En typst las familias `sans`/`mono` toman el nombre de `sansfont`/`monofont` del `head.yaml`; `sans-tracking` y `sans-scale` (en em respecto al cuerpo, p. ej. `0.1` y `1.2`) separan las letras y escalan los spans sans, para nombres en una sans condensada. En los perfiles con template LaTeX propio (`elsevier`, `dcc-informe`) las clases que requieren paquetes extra (subrayado/tachado, bloques, color) pueden no cargar su paquete; el resto funciona.
 
 ## Diagramas de Graphviz
 
