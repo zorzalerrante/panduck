@@ -68,10 +68,13 @@
 $for(presenters)$  (nombre: [$presenters.name$], afiliacion: [$if(presenters.affiliation)$$presenters.affiliation$$endif$]),
 $endfor$)
 
-// Datos del evento. El QR codifica `qr:` y, si no esta, la url visible.
+// Datos del evento. El QR codifica `qr:` y, si no esta, la url visible; la url
+// visible enlaza siempre a si misma, asi que las dos pueden apuntar a destinos
+// distintos (la pagina del evento y el formulario de inscripcion, por ejemplo).
 #let fecha = [$if(date)$$date$$endif$]
 #let lugar = [$if(place)$$place$$elseif(venue)$$venue$$endif$]
 #let url_texto = [$if(url)$$url$$endif$]
+#let url_dato = ruta("$if(url)$$url$$endif$")
 #let qr_dato = ruta("$if(qr)$$qr$$else$$if(url)$$url$$endif$$endif$")
 #let qr_pie = [$if(qr-caption)$$qr-caption$$endif$]
 #let qr_size = $if(qr-size)$$qr-size$$else$6.7 * cuerpo_size$endif$
@@ -231,10 +234,8 @@ $endif$
   if lugar != [] { piezas.push(text(size: 1.05 * cuerpo_size, lugar)) }
   if url_texto != [] {
     piezas.push(box(text(size: 1.05 * cuerpo_size, fill: acento, weight: "bold",
-      if qr_dato != "" {
-        link(if qr_dato.starts-with("http") { qr_dato } else { "https://" + qr_dato },
-             url_texto)
-      } else { url_texto })))
+      link(if url_dato.starts-with("http") { url_dato } else { "https://" + url_dato },
+           url_texto))))
   }
   if piezas.len() == 0 { none } else {
     piezas.join(text(size: 1.05 * cuerpo_size, fill: tinta.lighten(50%),

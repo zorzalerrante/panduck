@@ -57,8 +57,9 @@ presenters:
 date: "{{fecha}}"
 place: "{{lugar}}"
 url: "{{url}}"
-# El QR codifica `qr:` y, si no esta, la url visible. `qr-caption` es la linea
-# que va debajo.
+# El QR codifica `qr:` y, si no esta, la url visible (que siempre enlaza a si
+# misma, asi que el QR puede llevar a otra parte, como la inscripcion).
+# `qr-caption` es la linea que va debajo.
 # qr: "https://ejemplo.cl/inscripcion"
 qr-caption: "Inscripciones"
 # El porte del QR y el alto de los logos tambien salen de fontsize; se fijan aqui
