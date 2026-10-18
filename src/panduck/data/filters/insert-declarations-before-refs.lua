@@ -1,17 +1,18 @@
 -- Inserts back-matter declaration sections before the References section:
--- Funding, Competing interests and Data availability. Runs after citeproc, so
--- the refs div is already present in the AST; the sections are placed right
--- before the "References" header (or the citeproc #refs div). Clears the
--- corresponding meta fields so a template's own $if(...)$ fallback block does
--- not duplicate them.
+-- Acknowledgements, Funding, Competing interests, Data availability and the
+-- generative AI declaration. Runs after citeproc, so the refs div is already
+-- present in the AST; the sections are placed right before the "References"
+-- header (or the citeproc #refs div). Clears the corresponding meta fields so a
+-- template's own $if(...)$ fallback block does not duplicate them.
 --
 -- Each statement is emitted as a native pandoc Para so the LaTeX writer escapes
 -- special characters and renders links (\href), which a raw string could not.
 --
--- Anonymous: funding and data availability are stripped (grant numbers and
--- data agreements can identify the institution); both belong to the title page
--- in a double-blind submission. Competing interests are kept: a generic
--- statement does not identify the authors.
+-- Anonymous: acknowledgements, funding, competing interests and data
+-- availability are stripped, because names of people, grants, companies, data
+-- providers and repository URLs identify the authors. In double-blind journals
+-- they go only in the title page, which prints all four. The generative AI
+-- declaration is kept.
 
 local ptype = pandoc.utils.type
 local stringify = pandoc.utils.stringify
@@ -34,6 +35,13 @@ function Pandoc(doc)
   local anon = doc.meta.anonymous
   local decls = {}
 
+  -- Acknowledgements: single statement (hidden when anonymous).
+  if doc.meta.acknowledgements and not anon then
+    for _, b in ipairs(section("Acknowledgements", as_inlines(doc.meta.acknowledgements))) do
+      decls[#decls + 1] = b
+    end
+  end
+
   -- Funding: "This work was supported by A; B." (hidden when anonymous).
   local funding = doc.meta.funding
   if funding and not anon then
@@ -46,8 +54,8 @@ function Pandoc(doc)
     for _, b in ipairs(section("Funding", inl)) do decls[#decls + 1] = b end
   end
 
-  -- Competing interests: single statement.
-  if doc.meta.interests then
+  -- Competing interests: single statement (hidden when anonymous).
+  if doc.meta.interests and not anon then
     for _, b in ipairs(section("Competing interests", as_inlines(doc.meta.interests))) do
       decls[#decls + 1] = b
     end
@@ -60,7 +68,18 @@ function Pandoc(doc)
     end
   end
 
+  -- Generative AI declaration (Elsevier): single statement. Kept when anonymous,
+  -- because it does not identify the authors.
+  if doc.meta.ai_declaration then
+    local titulo = "Declaration of generative AI and AI-assisted technologies in the writing process"
+    for _, b in ipairs(section(titulo, as_inlines(doc.meta.ai_declaration))) do
+      decls[#decls + 1] = b
+    end
+  end
+
   -- Clear meta so the template fallback blocks do not duplicate these.
+  doc.meta.ai_declaration = nil
+  doc.meta.acknowledgements = nil
   doc.meta.funding = nil
   doc.meta.interests = nil
   doc.meta.data = nil
