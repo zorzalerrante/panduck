@@ -104,6 +104,13 @@ $endif$
 \@for\f:=\global@pandoccrossref@subfigures@footnotes\do{\stepcounter{footnote}\footnotetext{\f}}%
 \gdef\global@pandoccrossref@subfigures@footnotes{}}
 \makeatother
+$if(linenumbers)$
+\usepackage{lineno}
+\linenumbers
+$endif$
+$if(journal)$
+\journal{$journal$}
+$endif$
 
 \begin{document}
 
