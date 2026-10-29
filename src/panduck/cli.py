@@ -226,11 +226,14 @@ def cmd_build(args, extra):
             print(f"[panduck] PNG: {base}-NN.png ({dpi} ppi)")
         return
     # cada perfil puede traer un reference-doc de Word en reference/<perfil>-reference.docx;
-    # pandoc solo lo usa para docx (lo resuelve por ruta, no desde el data-dir)
+    # pandoc solo lo usa para docx (lo resuelve por ruta, no desde el data-dir).
+    # --reference elige otro por nombre (p. ej. formal), con los filtros del perfil
     if args.to == "docx":
-        ref = DATA / "reference" / f"{args.profile}-reference.docx"
+        ref = DATA / "reference" / f"{args.reference or args.profile}-reference.docx"
         if ref.exists():
             cmd += ["--reference-doc", str(ref)]
+        elif args.reference:
+            sys.exit(f"[panduck] no existe el reference-doc {ref}")
     out = args.output or output_name(sources, OUTPUT_EXT[args.to])
     run(cmd + ["-o", out])
     print(f"[panduck] listo: {out}")
@@ -414,6 +417,9 @@ def main():
     p_build.add_argument("--no-png", action="store_true",
                          help="desactiva la exportacion PNG por defecto del perfil")
     p_build.add_argument("--dpi", type=int, help="DPI de la exportacion PNG (default del perfil o 144)")
+    p_build.add_argument("--reference",
+                         help="reference-doc de Word para -t docx: reference/<nombre>-reference.docx "
+                              "(default: el del perfil)")
 
     p_dist = sub.add_parser("dist", help="empaqueta tex + imagenes para submission")
     add_common(p_dist)
