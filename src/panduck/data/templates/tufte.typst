@@ -40,7 +40,11 @@
     layout(size => {
       let nat = measure(image(it.source, alt: "__cap__", width: size.width))
       if nat.height > margen_img_alto {
-        image(it.source, alt: "__cap__", height: margen_img_alto)
+        // `width: auto` es explicito a proposito (igual que en tufte-book):
+        // tufte.lua deja un `set image(width: 100%)` en scope y sin esto la
+        // imagen quedaria con ancho y alto fijos a la vez, y el `fit: "cover"`
+        // por omision de typst la recortaria.
+        image(it.source, alt: "__cap__", width: auto, height: margen_img_alto)
       } else { it }
     })
   }
